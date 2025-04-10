@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pancerny Papier
 
-## Getting Started
+Aplikacja do generowania i personalizacji dokumentów prawnych z wykorzystaniem AI.
 
-First, run the development server:
+## Funkcje
 
+- Generowanie wstępnych wersji dokumentów prawnych (wypowiedzenia, reklamacje, wezwania do zapłaty)
+- Możliwość zakupu pełnej, spersonalizowanej wersji dokumentu
+- Konsultacje online z doświadczonymi prawnikami
+- Intuicyjny interfejs użytkownika
+
+## Wymagania
+
+- Node.js 18+
+- npm lub yarn
+
+## Instalacja
+
+1. Sklonuj repozytorium:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/twoja-nazwa-uzytkownika/pancerny-papier.git
+cd pancerny-papier
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Zainstaluj zależności:
+```bash
+npm install
+# lub
+yarn install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Utwórz plik `.env.local` bazując na `.env.example` i wypełnij go swoimi kluczami API:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Uruchom serwer deweloperski:
+```bash
+npm run dev
+# lub
+yarn dev
+```
 
-## Learn More
+5. Otwórz [http://localhost:3000](http://localhost:3000) w przeglądarce.
 
-To learn more about Next.js, take a look at the following resources:
+## Struktura projektu
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `/src/app` - Główne komponenty aplikacji
+- `/src/app/api` - Endpointy API (OpenAI, Stripe)
+- `/src/app/konsultacja` - Strona konsultacji prawnych
+- `/src/app/regulamin` - Strona regulaminu
+- `/public` - Zasoby statyczne
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Licencja
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[MIT](https://choosealicense.com/licenses/mit/)
