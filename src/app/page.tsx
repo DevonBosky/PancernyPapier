@@ -117,6 +117,22 @@ export default function Home() {
   const [isPaid, setIsPaid] = useState<boolean>(false);
   const [agreedToTerms, setAgreedToTerms] = useState<boolean>(false);
   const [paymentMessage, setPaymentMessage] = useState<string>('');
+  
+  // Dodaję stan dla wybranego pakietu
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'extended' | 'premium'>('basic');
+  const [showGuide, setShowGuide] = useState<boolean>(false);
+  const [showAssistant, setShowAssistant] = useState<boolean>(false);
+  const [guideContent, setGuideContent] = useState<string>('');
+  
+  // Definiuję typ wiadomości asystenta
+  type AssistantMessageType = {
+    role: 'user' | 'assistant';
+    content: string;
+  };
+  
+  const [assistantMessages, setAssistantMessages] = useState<AssistantMessageType[]>([]);
+  const [assistantQuestion, setAssistantQuestion] = useState<string>('');
+  const [assistantQuestionsLeft, setAssistantQuestionsLeft] = useState<number>(5);
 
   // Dodaję stan dla danych formularza pełnomocnictwa
   const [pelnomocnictwoData, setPelnomocnictwoData] = useState<PelnomocnictwoFormData>({
@@ -249,45 +265,120 @@ export default function Home() {
     }
   };
   
+  // Funkcja obsługi symulowanej płatności
   const handleSimulatedPayment = () => {
     if (isProcessingPayment || !previewContent) return;
     
     // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
     setIsProcessingPayment(true);
     setPaymentMessage('Przetwarzanie płatności...');
+    setSelectedPlan('basic');
     
-    // Symulacja opóźnienia i sukcesu płatności (w rzeczywistości wywołalibyśmy API Stripe)
-    setTimeout(async () => {
-      try {
-        // W pełnej implementacji tutaj byłoby wywołanie API /api/generate z parametrem is_final=true
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            documentType: selectedDocument,
-            detailsText: detailsInput,
-            is_final: true,  // To oznacza, że generujemy wersję finalną (bez placeholderów)
-          }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Wystąpił błąd podczas generowania dokumentu.');
-        }
-        
-        // Zapisujemy treść dokumentu finalnego (bez placeholderów)
-        setFinalContent(data.draft);
-        setIsPaid(true);
-        setPaymentMessage('Płatność zaakceptowana! Pobierz edytowalną wersję dokumentu poniżej.');
-      } catch (error: unknown) {
-        console.error('Błąd podczas przetwarzania płatności:', error);
-        setPaymentMessage(`Błąd: ${(error as Error).message || 'Wystąpił nieoczekiwany błąd'}`);
-        // W rzeczywistej aplikacji zaimplementowalibyśmy lepszą obsługę błędów
+    setTimeout(() => {
+      // Symulujemy zakończenie płatności
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
+      setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
+      setShowGuide(false);
+      setShowAssistant(false);
+    }, 2000);
+  };
+  
+  // Funkcja obsługi płatności za pakiet rozszerzony
+  const handleExtendedPayment = () => {
+    if (isProcessingPayment || !previewContent) return;
+    
+    setIsProcessingPayment(true);
+    setPaymentMessage('Przetwarzanie płatności za pakiet rozszerzony...');
+    setSelectedPlan('extended');
+    
+    setTimeout(() => {
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      setFinalContent(previewContent);
+      setShowGuide(true);
+      setShowAssistant(false);
+      
+      // Symulujemy wygenerowanie poradnika
+      const documentType = documentOptions.find(option => option.value === selectedDocument)?.label || selectedDocument;
+      setGuideContent(`# Kompleksowy poradnik: ${documentType}\n\n## Podstawa prawna\nDokument jest oparty na przepisach Kodeksu Cywilnego oraz innych aktach prawnych regulujących daną materię.\n\n## Krok po kroku\n1. Przygotowanie dokumentu\n2. Sprawdzenie wszystkich danych\n3. Wydrukowanie dokumentu\n4. Podpisanie dokumentu\n5. Dostarczenie dokumentu odpowiedniej osobie/instytucji\n\n## Ważne terminy\nPamiętaj o zachowaniu odpowiednich terminów związanych z dokumentem.\n\n## Co dalej?\nPo złożeniu dokumentu możesz spodziewać się odpowiedzi w ciągu X dni.\n\n## Najczęstsze pytania\n1. Czy dokument wymaga notariusza? - To zależy od konkretnej sytuacji.\n2. Czy mogę złożyć dokument elektronicznie? - W niektórych przypadkach tak.\n\n`);
+      
+      setPaymentMessage('Dziękujemy za płatność! Twój dokument i poradnik są gotowe do pobrania.');
+    }, 2000);
+  };
+  
+  // Funkcja obsługi płatności za pakiet premium
+  const handlePremiumPayment = () => {
+    if (isProcessingPayment || !previewContent) return;
+    
+    setIsProcessingPayment(true);
+    setPaymentMessage('Przetwarzanie płatności za pakiet premium...');
+    setSelectedPlan('premium');
+    
+    setTimeout(() => {
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      setFinalContent(previewContent);
+      setShowGuide(true);
+      setShowAssistant(true);
+      
+      // Symulujemy wygenerowanie poradnika
+      const documentType = documentOptions.find(option => option.value === selectedDocument)?.label || selectedDocument;
+      setGuideContent(`# Kompleksowy poradnik: ${documentType}\n\n## Podstawa prawna\nDokument jest oparty na przepisach Kodeksu Cywilnego oraz innych aktach prawnych regulujących daną materię.\n\n## Krok po kroku\n1. Przygotowanie dokumentu\n2. Sprawdzenie wszystkich danych\n3. Wydrukowanie dokumentu\n4. Podpisanie dokumentu\n5. Dostarczenie dokumentu odpowiedniej osobie/instytucji\n\n## Ważne terminy\nPamiętaj o zachowaniu odpowiednich terminów związanych z dokumentem.\n\n## Co dalej?\nPo złożeniu dokumentu możesz spodziewać się odpowiedzi w ciągu X dni.\n\n## Najczęstsze pytania\n1. Czy dokument wymaga notariusza? - To zależy od konkretnej sytuacji.\n2. Czy mogę złożyć dokument elektronicznie? - W niektórych przypadkach tak.\n\n`);
+      
+      // Dodajemy początkową wiadomość od asystenta
+      setAssistantMessages([
+        {
+          role: 'assistant',
+          content: `Witaj! Jestem Twoim Asystentem Prawnym. Odpowiem na do 5 pytań związanych z dokumentem "${documentType}". W czym mogę pomóc?`
+        } as AssistantMessageType
+      ]);
+      
+      setAssistantQuestionsLeft(5);
+      setPaymentMessage('Dziękujemy za płatność! Twój dokument, poradnik i dostęp do Asystenta są gotowe.');
+    }, 2000);
+  };
+  
+  // Funkcja obsługi zadawania pytań asystentowi
+  const handleAskAssistant = () => {
+    if (!assistantQuestion.trim() || assistantQuestionsLeft <= 0) return;
+    
+    // Dodajemy pytanie użytkownika do konwersacji
+    const updatedMessages = [
+      ...assistantMessages,
+      { role: 'user', content: assistantQuestion } as AssistantMessageType
+    ];
+    setAssistantMessages(updatedMessages);
+    setAssistantQuestion('');
+    
+    // Symulujemy odpowiedź asystenta po krótkim opóźnieniu
+    setTimeout(() => {
+      const documentType = documentOptions.find(option => option.value === selectedDocument)?.label || selectedDocument;
+      
+      let assistantResponse = '';
+      
+      // Prosty mechanizm generowania odpowiedzi na podstawie pytania
+      if (assistantQuestion.toLowerCase().includes('termin')) {
+        assistantResponse = `Terminy związane z dokumentem "${documentType}" są zależne od konkretnej sytuacji. Standardowo warto zachować 14-dniowy okres na odpowiedź.`;
+      } else if (assistantQuestion.toLowerCase().includes('notariusz') || assistantQuestion.toLowerCase().includes('poświadcz')) {
+        assistantResponse = `Dokument typu "${documentType}" zazwyczaj nie wymaga poświadczenia notarialnego, chyba że dotyczy nieruchomości lub ma szczególne znaczenie prawne.`;
+      } else if (assistantQuestion.toLowerCase().includes('odwołać') || assistantQuestion.toLowerCase().includes('anulować')) {
+        assistantResponse = `Możliwość odwołania lub anulowania dokumentu "${documentType}" zależy od tego, czy druga strona już go otrzymała i podjęła na jego podstawie jakieś działania. Ogólna zasada mówi, że można odwołać oświadczenie woli do momentu jego doręczenia adresatowi.`;
+      } else {
+        assistantResponse = `W przypadku dokumentu "${documentType}" należy pamiętać o dokładnym wypełnieniu wszystkich sekcji i zachowaniu kopii dla siebie. Jeśli masz bardziej szczegółowe pytanie, proszę o doprecyzowanie.`;
       }
-    }, 2000);  // Symulacja 2-sekundowego opóźnienia dla UX
+      
+      // Dodajemy odpowiedź asystenta
+      const newMessages = [
+        ...updatedMessages,
+        { role: 'assistant', content: assistantResponse } as AssistantMessageType
+      ];
+      setAssistantMessages(newMessages);
+      
+      // Zmniejszamy liczbę dostępnych pytań
+      setAssistantQuestionsLeft(prev => prev - 1);
+    }, 1000);
   };
 
   // Funkcja pobierania jako TXT z dynamicznym importem saveAs
@@ -497,30 +588,91 @@ export default function Home() {
                <p className="text-sm text-gray-700 mb-3 px-4">
                  Po dokonaniu płatności otrzymasz <strong>finalną wersję dokumentu</strong> ze wszystkimi uzupełnionymi danymi. Dokument będzie gotowy do użycia bez konieczności ręcznego zastępowania pól.
                </p>
-               <p className="text-xs text-blue-700 font-medium">Oferujemy możliwość profesjonalnej konsultacji treści dokumentu z doświadczonym prawnikiem.</p>
              </div>
-            <button
-              onClick={handleSimulatedPayment}
-              disabled={isProcessingPayment || isLoading}
-              className="inline-flex justify-center py-3 px-8 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {isProcessingPayment ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Przetwarzanie...
-                </span>
-               ) : (
-                <span className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Zapłać 8 PLN za Finalną Wersję
-                </span>
-               )} 
-            </button>
+            
+            {/* Opcja podstawowa */}
+            <div className="mb-6">
+              <button
+                onClick={handleSimulatedPayment}
+                disabled={isProcessingPayment || isLoading}
+                className="w-full inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {isProcessingPayment && selectedPlan === 'basic' ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Przetwarzanie...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Zapłać 8 PLN za Finalną Wersję
+                  </span>
+                )}
+              </button>
+            </div>
+            
+            {/* Opcja rozszerzona */}
+            <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <p className="text-sm text-gray-700 mb-3">
+                Otrzymaj kompleksowy poradnik wraz z dokumentem - wszystko co musisz wiedzieć o procedurze!
+              </p>
+              <button
+                onClick={handleExtendedPayment}
+                disabled={isProcessingPayment || isLoading}
+                className="w-full inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {isProcessingPayment && selectedPlan === 'extended' ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Przetwarzanie...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Zapłać 10 PLN za Dokument + Poradnik
+                  </span>
+                )}
+              </button>
+            </div>
+            
+            {/* Opcja premium */}
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+              <p className="text-sm text-gray-700 mb-3">
+                Uzyskaj dostęp do Asystenta Prawnika, który odpowie na Twoje pytania + dokument i poradnik!
+              </p>
+              <button
+                onClick={handlePremiumPayment}
+                disabled={isProcessingPayment || isLoading}
+                className="w-full inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                {isProcessingPayment && selectedPlan === 'premium' ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Przetwarzanie...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Zapłać 15 PLN za Pakiet Premium
+                  </span>
+                )}
+              </button>
+            </div>
           </section>
         )}
         
@@ -565,6 +717,105 @@ export default function Home() {
                   Umów konsultację z prawnikiem
                 </button>
              </div>
+          </section>
+        )}
+
+        {/* Nowa sekcja dla poradnika */}
+        {isPaid && showGuide && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="mr-2">Twój Kompleksowy Poradnik</span>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium">PREMIUM</span>
+            </h2>
+            <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+              <div className="whitespace-pre-wrap markdown-content text-sm text-gray-800">
+                {guideContent}
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => navigator.clipboard.writeText(guideContent)}
+                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 mr-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Kopiuj
+              </button>
+              <button
+                onClick={() => alert("Funkcjonalność pobierania poradnika będzie dostępna wkrótce.")}
+                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Pobierz PDF
+              </button>
+            </div>
+          </section>
+        )}
+        
+        {/* Nowa sekcja dla asystenta */}
+        {isPaid && showAssistant && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="mr-2">Twój Asystent Prawny</span>
+              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">PREMIUM</span>
+            </h2>
+            
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+              {/* Okno konwersacji */}
+              <div className="max-h-80 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                {assistantMessages.map((message, index) => (
+                  <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] p-3 rounded-lg ${
+                      message.role === 'user' 
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-gray-200 text-gray-800'
+                    }`}>
+                      {message.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Pole wprowadzania */}
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={assistantQuestion}
+                    onChange={(e) => setAssistantQuestion(e.target.value)}
+                    placeholder="Zadaj pytanie dotyczące Twojego dokumentu..."
+                    disabled={assistantQuestionsLeft <= 0}
+                    className="flex-grow p-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleAskAssistant}
+                    disabled={assistantQuestionsLeft <= 0 || !assistantQuestion.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-xs text-gray-500 mt-2 flex justify-between items-center">
+                  <span>{assistantQuestionsLeft > 0 
+                    ? `Pozostało pytań: ${assistantQuestionsLeft}` 
+                    : "Wykorzystano limit pytań"}
+                  </span>
+                  {assistantQuestionsLeft <= 0 && (
+                    <button 
+                      onClick={() => alert("Funkcjonalność dokupienia dodatkowych pytań będzie dostępna wkrótce.")}
+                      className="text-purple-600 hover:text-purple-800 underline"
+                    >
+                      Dokup więcej pytań
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </section>
         )}
 
