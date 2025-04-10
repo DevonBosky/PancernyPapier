@@ -30,10 +30,30 @@ export default function DocumentPage() {
   const [assistantQuestionsLeft, setAssistantQuestionsLeft] = useState<number>(5);
   
   useEffect(() => {
+    // Funkcja odczytująca dane z localStorage z obsługą błędów
+    const getFromLocalStorage = (key: string) => {
+      try {
+        if (typeof window !== 'undefined') {
+          const item = window.localStorage.getItem(key);
+          return item;
+        }
+        return null;
+      } catch (error) {
+        console.error(`Błąd podczas odczytu ${key} z localStorage:`, error);
+        return null;
+      }
+    };
+    
     // Pobieramy dane z localStorage
-    const savedDocument = localStorage.getItem('generatedDocument');
-    const savedDocumentType = localStorage.getItem('documentType');
-    const savedPaymentPlan = localStorage.getItem('paymentPlan');
+    const savedDocument = getFromLocalStorage('generatedDocument');
+    const savedDocumentType = getFromLocalStorage('documentType');
+    const savedPaymentPlan = getFromLocalStorage('paymentPlan');
+    
+    // Debugowanie - wyświetlamy wartości w konsoli
+    console.log('Dane z localStorage:');
+    console.log('generatedDocument:', savedDocument ? 'Istnieje' : 'Brak');
+    console.log('documentType:', savedDocumentType);
+    console.log('paymentPlan:', savedPaymentPlan);
     
     if (!savedDocument) {
       // Jeśli nie ma dokumentu, wracamy na stronę główną
@@ -43,15 +63,32 @@ export default function DocumentPage() {
     
     setDocumentContent(savedDocument);
     setDocumentType(savedDocumentType || '');
-    setPaymentPlan(savedPaymentPlan || 'basic');
+    
+    // Sprawdzamy czy plan jest poprawnie określony
+    const plan = savedPaymentPlan || 'basic';
+    console.log('Ustawiony plan:', plan);
+    setPaymentPlan(plan);
+    
+    // Awaryjnie - jeśli z jakiegoś powodu nie załadowały się dane z localStorage
+    // przyjmujemy plan z parametru URL, jeśli jest dostępny
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPlan = urlParams.get('plan');
+    
+    const finalPlan = urlPlan || plan;
+    console.log('Końcowy plan wybrany do wyświetlenia:', finalPlan);
     
     // Ustawiamy opcje w zależności od pakietu
-    if (savedPaymentPlan === 'extended' || savedPaymentPlan === 'premium') {
+    if (finalPlan === 'extended' || finalPlan === 'premium') {
+      console.log('Aktywuję informator dla planu:', finalPlan);
       setShowGuide(true);
       generateGuideContent(savedDocumentType || '');
+    } else {
+      console.log('Informator nieaktywny dla planu:', finalPlan);
+      setShowGuide(false);
     }
     
-    if (savedPaymentPlan === 'premium') {
+    if (finalPlan === 'premium') {
+      console.log('Aktywuję asystenta dla planu premium');
       setShowAssistant(true);
       // Dodajemy początkową wiadomość asystenta
       setAssistantMessages([
@@ -60,7 +97,17 @@ export default function DocumentPage() {
           content: `Witaj! Jestem Twoim Asystentem Prawnym. Odpowiem na do 5 pytań związanych z dokumentem. W czym mogę pomóc?`
         }
       ]);
+    } else {
+      console.log('Asystent nieaktywny dla planu:', finalPlan);
+      setShowAssistant(false);
     }
+    
+    // Do celów debugowania, wyświetlamy status sekcji
+    console.log('Status sekcji:', {
+      dokument: true,
+      informator: finalPlan === 'extended' || finalPlan === 'premium',
+      asystent: finalPlan === 'premium'
+    });
     
     setIsLoading(false);
   }, [router]);

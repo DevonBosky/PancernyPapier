@@ -345,13 +345,18 @@ export default function Home() {
           localStorage.setItem('documentType', selectedDocument);
           localStorage.setItem('paymentPlan', selectedPlan);
           
+          // Dla debugowania
+          console.log('Zapisano do localStorage:');
+          console.log('documentType:', selectedDocument);
+          console.log('paymentPlan:', selectedPlan);
+          
           // Aktualizujemy modalny komunikat na moment
           setModalMessage('Dokument gotowy! Przekierowujemy...');
           setModalStep('complete');
           
           // Po krótkim opóźnieniu przekierowujemy na stronę z dokumentem
           setTimeout(() => {
-            router.push('/dokument');
+            router.push(`/dokument?plan=${selectedPlan}`);
           }, 1000);
           
         } else {
@@ -368,18 +373,21 @@ export default function Home() {
   
   // Funkcja obsługi płatności podstawowej z walidacją
   const handleBasicPaymentWithValidation = () => {
+    console.log('Wybrano pakiet: basic');
     setSelectedPlan('basic');
     validateAndProcess(() => {});
   };
   
   // Funkcja obsługi płatności rozszerzonej z walidacją
   const handleExtendedPaymentWithValidation = () => {
+    console.log('Wybrano pakiet: extended');
     setSelectedPlan('extended');
     validateAndProcess(() => {});
   };
   
   // Funkcja obsługi płatności premium z walidacją
   const handlePremiumPaymentWithValidation = () => {
+    console.log('Wybrano pakiet: premium');
     setSelectedPlan('premium');
     validateAndProcess(() => {});
   };
