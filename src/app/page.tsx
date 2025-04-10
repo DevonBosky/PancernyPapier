@@ -107,49 +107,44 @@ export default function Home() {
   };
   
   const handleSimulatedPayment = () => {
-    if (!previewContent) {
-      alert('Najpierw wygeneruj Wstępną Wersję.');
-      return;
-    }
+    if (isProcessingPayment || !previewContent) return;
+    
+    // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
     setIsProcessingPayment(true);
     setPaymentMessage('Przetwarzanie płatności...');
-
-    // Generowanie finalnej wersji dokumentu po płatności
-    fetch('/api/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        documentType: selectedDocument, 
-        detailsText: detailsInput,
-        is_final: true // Ważne - oznacza wersję finalną bez didaskaliów
-      }),
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Błąd podczas generowania finalnej wersji dokumentu');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.draft) {
+    
+    // Symulacja opóźnienia i sukcesu płatności (w rzeczywistości wywołalibyśmy API Stripe)
+    setTimeout(async () => {
+      try {
+        // W pełnej implementacji tutaj byłoby wywołanie API /api/generate z parametrem is_final=true
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            documentType: selectedDocument,
+            detailsText: detailsInput,
+            is_final: true,  // To oznacza, że generujemy wersję finalną (bez placeholderów)
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Wystąpił błąd podczas generowania dokumentu.');
+        }
+        
+        // Zapisujemy treść dokumentu finalnego (bez placeholderów)
         setFinalContent(data.draft);
         setIsPaid(true);
-        setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy.');
-        setTimeout(() => setPaymentMessage(''), 4000);
-      } else {
-        throw new Error('Otrzymano nieprawidłową odpowiedź z serwera.');
+        setPaymentMessage('Płatność zaakceptowana! Pobierz edytowalną wersję dokumentu poniżej.');
+      } catch (error: unknown) {
+        console.error('Błąd podczas przetwarzania płatności:', error);
+        setPaymentMessage(`Błąd: ${(error as Error).message || 'Wystąpił nieoczekiwany błąd'}`);
+        // W rzeczywistej aplikacji zaimplementowalibyśmy lepszą obsługę błędów
       }
-    })
-    .catch(error => {
-      console.error('Błąd:', error);
-      setPaymentMessage(`Błąd: ${error.message}. Spróbuj ponownie.`);
-      setTimeout(() => setPaymentMessage(''), 4000);
-    })
-    .finally(() => {
-      setIsProcessingPayment(false);
-    });
+    }, 2000);  // Symulacja 2-sekundowego opóźnienia dla UX
   };
 
   // Funkcja pobierania jako TXT z dynamicznym importem saveAs
@@ -158,10 +153,6 @@ export default function Home() {
     const { saveAs } = await import('file-saver'); // Dynamiczny import
     const blob = new Blob([finalContent], { type: 'text/plain;charset=utf-8' });
     saveAs(blob, `${selectedDocument || 'dokument'}.txt`);
-  };
-
-  const handleConsultationClick = () => {
-    alert('Funkcjonalność umawiania konsultacji zostanie dodana wkrótce! Skontaktuj się z nami pod adresem [Twój email].');
   };
 
   // Dodanie stylu dla rozmytych linii
@@ -396,15 +387,6 @@ export default function Home() {
                   </svg>
                   Pobierz jako DOC
                 </button>
-                <a
-                  href="/konsultacja"
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 transition-all duration-200"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Umów konsultację z prawnikiem
-                </a>
              </div>
           </section>
         )}
@@ -415,7 +397,6 @@ export default function Home() {
         <div className="flex justify-center space-x-5 mb-4">
           <a href="/regulamin" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-800 underline">Regulamin</a>
           <a href="/polityka-prywatnosci" className="text-sm text-blue-600 hover:text-blue-800 underline">Polityka Prywatności</a>
-          <a href="/konsultacja" className="text-sm text-blue-600 hover:text-blue-800 underline">Konsultacje</a>
         </div>
         <p className="text-xs text-gray-500">© {new Date().getFullYear()} Pancerny Papier. Wszelkie prawa zastrzeżone.</p>
         <p className="mt-1 text-xs text-gray-500">Uwaga: Serwis generuje jedynie wstępne wersje dokumentów i nie stanowi porady prawnej.</p>

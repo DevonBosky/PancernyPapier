@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 // Używamy zmiennej środowiskowej dla domeny
 const YOUR_DOMAIN = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     // Sprawdzamy czy klucz API jest dostępny
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     // return NextResponse.redirect(session.url);
     return NextResponse.json({ sessionId: session.id });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Błąd podczas tworzenia sesji Stripe Checkout:', error);
-    return NextResponse.json({ error: error.message || 'Wewnętrzny błąd serwera' }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || 'Wewnętrzny błąd serwera' }, { status: 500 });
   }
 } 

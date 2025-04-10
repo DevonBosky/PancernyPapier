@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ draft: generatedDraft.trim() });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Błąd w API /api/generate:', error);
     let errorMessage = 'Wystąpił wewnętrzny błąd serwera podczas generowania dokumentu.';
     let statusCode = 500;
@@ -100,15 +100,15 @@ export async function POST(request: Request) {
     if (error instanceof SyntaxError) {
       errorMessage = 'Nieprawidłowy format danych JSON.';
       statusCode = 400;
-    } else if (error.response) { // Błąd odpowiedzi z API OpenAI
-      console.error('Błąd API OpenAI (status):', error.response.status);
-      console.error('Błąd API OpenAI (dane):', error.response.data);
-      errorMessage = `Błąd komunikacji z usługą AI: ${error.response.data?.error?.message || error.message}`;
-      statusCode = error.response.status || 500;
-    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+    } else if ((error as any).response) { // Błąd odpowiedzi z API OpenAI
+      console.error('Błąd API OpenAI (status):', (error as any).response.status);
+      console.error('Błąd API OpenAI (dane):', (error as any).response.data);
+      errorMessage = `Błąd komunikacji z usługą AI: ${(error as any).response.data?.error?.message || (error as Error).message}`;
+      statusCode = (error as any).response.status || 500;
+    } else if ((error as any).code === 'ENOTFOUND' || (error as any).code === 'ECONNREFUSED') {
       errorMessage = 'Nie można połączyć się z usługą AI.';
       statusCode = 503; // Service Unavailable
-    } else if (error.message.includes('OPENAI_API_KEY')) { // Dodatkowe sprawdzenie dla braku klucza
+    } else if ((error as Error).message.includes('OPENAI_API_KEY')) { // Dodatkowe sprawdzenie dla braku klucza
         errorMessage = 'Konfiguracja serwera niekompletna (problem z kluczem API).';
         statusCode = 500;
     }

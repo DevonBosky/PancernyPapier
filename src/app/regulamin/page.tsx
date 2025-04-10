@@ -1,7 +1,9 @@
+import Link from 'next/link';
+
 export default function RegulaminPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 sm:p-12 bg-gradient-to-b from-slate-50 to-slate-100">
-      <div className="w-full max-w-4xl bg-white p-6 sm:p-10 rounded-xl shadow-xl mb-8 border border-gray-100">
+    <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 bg-gradient-to-b from-slate-50 to-slate-100">
+      <div className="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-xl shadow-xl">
         <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Regulamin Serwisu Pancerny Papier</h1>
         
         <section className="mb-8">
@@ -11,7 +13,7 @@ export default function RegulaminPage() {
               1.1. Niniejszy regulamin określa zasady korzystania z serwisu internetowego Pancerny Papier, dostępnego pod adresem internetowym pancernypapier.pl.
             </p>
             <p>
-              1.2. Właścicielem i administratorem serwisu jest [Nazwa Firmy], z siedzibą w [Adres], NIP: [Numer NIP], REGON: [Numer REGON], zwany dalej "Usługodawcą".
+              1.2. Właścicielem i administratorem serwisu jest [Nazwa Firmy], z siedzibą w [Adres], NIP: [Numer NIP], REGON: [Numer REGON], zwany dalej &quot;Usługodawcą&quot;.
             </p>
             <p>
               1.3. Serwis umożliwia generowanie wstępnych wersji roboczych wybranych dokumentów prawnych i administracyjnych przy użyciu modelu językowego AI, po podaniu przez Użytkownika wymaganych danych.
@@ -158,9 +160,9 @@ export default function RegulaminPage() {
         </section>
 
         <div className="mt-10 text-center">
-           <a href="/" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+           <Link href="/" className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                Powrót do strony głównej
-           </a>
+           </Link>
         </div>
 
       </div>
