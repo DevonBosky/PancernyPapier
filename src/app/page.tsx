@@ -13,7 +13,17 @@ type DocumentType =
   | 'wypowiedzenie_pracy' 
   | 'odwolanie_mandat' 
   | 'reklamacja' 
-  | 'wezwanie_do_zaplaty';
+  | 'wezwanie_do_zaplaty'
+  | 'odstapienie_od_umowy_konsument'
+  | 'pelnomocnictwo_ogolne'
+  | 'wniosek_zaswiadczenie'
+  | 'umowa_pozyczki'
+  | 'protokol_zdawczo_odbiorczy'
+  | 'wypowiedzenie_pracodawca'
+  | 'umowa_zlecenie'
+  | 'umowa_o_dzielo'
+  | 'porozumienie_o_splacie'
+  | 'uchwala_wspolnikow_prosta';
 
 const documentOptions: { value: DocumentType; label: string }[] = [
   { value: 'wypowiedzenie_najmu', label: 'Wypowiedzenie umowy najmu (przez najemcę)' },
@@ -21,6 +31,16 @@ const documentOptions: { value: DocumentType; label: string }[] = [
   { value: 'odwolanie_mandat', label: 'Odwołanie od mandatu karnego' },
   { value: 'reklamacja', label: 'Reklamacja towaru/usługi' },
   { value: 'wezwanie_do_zaplaty', label: 'Wezwanie do zapłaty' },
+  { value: 'odstapienie_od_umowy_konsument', label: 'Odstąpienie od umowy (konsument, na odległość/poza lokalem)' },
+  { value: 'pelnomocnictwo_ogolne', label: 'Pełnomocnictwo ogólne' },
+  { value: 'wniosek_zaswiadczenie', label: 'Wniosek o wydanie zaświadczenia' },
+  { value: 'umowa_pozyczki', label: 'Umowa pożyczki (między osobami fizycznymi)' },
+  { value: 'protokol_zdawczo_odbiorczy', label: 'Protokół zdawczo-odbiorczy lokalu' },
+  { value: 'wypowiedzenie_pracodawca', label: 'Wypowiedzenie umowy o pracę (przez pracodawcę)' },
+  { value: 'umowa_zlecenie', label: 'Umowa zlecenie (prosty wzór)' },
+  { value: 'umowa_o_dzielo', label: 'Umowa o dzieło (prosty wzór)' },
+  { value: 'porozumienie_o_splacie', label: 'Porozumienie o spłacie długu w ratach' },
+  { value: 'uchwala_wspolnikow_prosta', label: 'Prosta uchwała wspólników Sp. z o.o.' },
 ];
 
 // Definicje tekstów pomocniczych (placeholderów) dla textarea
@@ -30,6 +50,16 @@ const documentPlaceholders: Record<DocumentType, string> = {
   odwolanie_mandat: "Podaj szczegóły dotyczące odwołania od mandatu:\n- Twoje dane (imię, nazwisko, adres, PESEL)\n- Numer i seria mandatu karnego\n- Data i miejsce nałożenia mandatu\n- Organ, który nałożył mandat\n- Opis zdarzenia\n- Uzasadnienie odwołania (dlaczego uważasz, że mandat jest niesłuszny)",
   reklamacja: "Podaj szczegóły dotyczące reklamacji towaru/usługi:\n- Twoje dane (imię, nazwisko, adres)\n- Dane sprzedawcy/usługodawcy\n- Data zakupu/zawarcia umowy\n- Nazwa towaru/usługi\n- Opis wady lub niezgodności z umową\n- Data stwierdzenia wady\n- Twoje żądanie (naprawa, wymiana, obniżenie ceny, odstąpienie od umowy)",
   wezwanie_do_zaplaty: "Podaj szczegóły dotyczące wezwania do zapłaty:\n- Twoje dane (wierzyciela: imię, nazwisko/nazwa firmy, adres)\n- Dane dłużnika (imię, nazwisko/nazwa firmy, adres)\n- Podstawa roszczenia (np. numer faktury, umowy, data powstania zobowiązania)\n- Kwota zadłużenia (liczbowo i słownie)\n- Termin zapłaty (podaj konkretną datę, np. 7 dni od otrzymania wezwania)\n- Numer konta bankowego do wpłaty",
+  odstapienie_od_umowy_konsument: "Podaj szczegóły dotyczące odstąpienia od umowy:\n- Twoje dane (imię, nazwisko, adres)\n- Dane sprzedawcy/usługodawcy\n- Data zawarcia umowy / Data otrzymania towaru\n- Numer zamówienia / Opis towaru/usługi\n- Data sporządzenia pisma\n- [Opcjonalnie] Numer konta do zwrotu środków",
+  pelnomocnictwo_ogolne: "Podaj szczegóły dotyczące pełnomocnictwa:\n- Dane Mocodawcy (imię, nazwisko, adres, PESEL/nr dowodu)\n- Dane Pełnomocnika (imię, nazwisko, adres, PESEL/nr dowodu)\n- Data sporządzenia pisma\n- Miejscowość sporządzenia pisma",
+  wniosek_zaswiadczenie: "Podaj szczegóły dotyczące wniosku o zaświadczenie:\n- Twoje dane (imię, nazwisko/nazwa firmy, adres, NIP/PESEL)\n- Dane urzędu/instytucji, do której składasz wniosek\n- Rodzaj zaświadczenia (np. o niezaleganiu w podatkach, o niezaleganiu ze składkami ZUS)\n- Cel wydania zaświadczenia (np. do przetargu, do banku)\n- Data sporządzenia pisma",
+  umowa_pozyczki: "Podaj szczegóły dotyczące umowy pożyczki:\n- Dane Pożyczkodawcy (imię, nazwisko, adres, PESEL/nr dowodu)\n- Dane Pożyczkobiorcy (imię, nazwisko, adres, PESEL/nr dowodu)\n- Kwota pożyczki (liczbowo i słownie)\n- Waluta pożyczki\n- Termin zwrotu pożyczki\n- [Opcjonalnie] Oprocentowanie (jeśli dotyczy)\n- [Opcjonalnie] Sposób przekazania kwoty (gotówka/przelew)\n- Data i miejsce zawarcia umowy",
+  protokol_zdawczo_odbiorczy: "Podaj szczegóły dotyczące protokołu zdawczo-odbiorczego lokalu:\n- Dane Zdającego (np. Wynajmujący, Sprzedający)\n- Dane Odbierającego (np. Najemca, Kupujący)\n- Adres lokalu/nieruchomości\n- Data przekazania\n- Stan liczników (woda zimna, woda ciepła, prąd, gaz)\n- Opis stanu technicznego lokalu i wyposażenia (np. ściany, podłogi, okna, meble, AGD)\n- Uwagi stron\n- Liczba przekazanych kluczy",
+  wypowiedzenie_pracodawca: "Podaj szczegóły dotyczące wypowiedzenia umowy przez pracodawcę:\n- Dane pracodawcy (nazwa, adres, NIP, REGON)\n- Dane pracownika (imię, nazwisko, adres)\n- Data zawarcia umowy o pracę\n- Rodzaj umowy\n- Stanowisko pracownika\n- Okres wypowiedzenia (zgodny z Kodeksem Pracy lub umową)\n- Przyczyna wypowiedzenia (wymagane przy umowach na czas nieokreślony)\n- Pouczenie o prawie odwołania do sądu pracy\n- Data sporządzenia pisma",
+  umowa_zlecenie: "Podaj szczegóły dotyczące umowy zlecenia:\n- Dane Zleceniodawcy (imię, nazwisko/nazwa firmy, adres, NIP/PESEL)\n- Dane Zleceniobiorcy (imię, nazwisko, adres, PESEL)\n- Przedmiot zlecenia (opis czynności)\n- Data rozpoczęcia i zakończenia zlecenia (lub okres obowiązywania)\n- Wynagrodzenie (kwota brutto/netto, sposób płatności: godzinowo/za całość)\n- Termin płatności wynagrodzenia\n- Oświadczenia Zleceniobiorcy (np. dotyczące ZUS)\n- Data i miejsce zawarcia umowy",
+  umowa_o_dzielo: "Podaj szczegóły dotyczące umowy o dzieło:\n- Dane Zamawiającego (imię, nazwisko/nazwa firmy, adres, NIP/PESEL)\n- Dane Wykonawcy (imię, nazwisko, adres, PESEL)\n- Przedmiot dzieła (dokładny opis rezultatu)\n- Termin wykonania dzieła\n- Wynagrodzenie za dzieło (kwota brutto/netto)\n- Termin i sposób płatności wynagrodzenia\n- Sposób przekazania dzieła\n- [Opcjonalnie] Kwestia praw autorskich (jeśli dotyczy)\n- Data i miejsce zawarcia umowy",
+  porozumienie_o_splacie: "Podaj szczegóły dotyczące porozumienia o spłacie zadłużenia:\n- Dane Wierzyciela\n- Dane Dłużnika\n- Podstawa zadłużenia (np. umowa, faktura, wezwanie do zapłaty)\n- Całkowita kwota zadłużenia na dzień zawarcia porozumienia\n- Uznanie długu przez Dłużnika\n- Harmonogram spłaty (liczba rat, wysokość rat, terminy płatności poszczególnych rat)\n- Numer konta bankowego Wierzyciela do wpłat\n- Skutki niedotrzymania warunków porozumienia\n- Data i miejsce zawarcia porozumienia",
+  uchwala_wspolnikow_prosta: "Podaj szczegóły dotyczące uchwały wspólników Sp. z o.o.:\n- Nazwa spółki, adres siedziby, numer KRS\n- Data i miejsce podjęcia uchwały\n- Numer uchwały\n- Treść uchwały (np. Zatwierdza się sprawozdanie finansowe za rok obrotowy... / Powołuje się Pana/Panią X na stanowisko Członka Zarządu / Odwołuje się Pana/Panią Y ze stanowiska Członka Zarządu)\n- Wynik głosowania (liczba głosów za, przeciw, wstrzymujących się)\n- Podpisy wspólników obecnych na zgromadzeniu (lub protokołanta, jeśli dotyczy)",
 };
 
 // TODO: Zdefiniować pola dla każdego typu dokumentu
@@ -190,14 +220,14 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 bg-gradient-to-b from-slate-50 to-slate-100">
       <div className="flex flex-col items-center mb-10">
          <div className="relative mb-4 shadow-lg rounded-full p-2 bg-white">
-           <Image 
+        <Image
               src="/logo.png" 
               alt="Pancerny Papier Logo"
               width={120}
               height={120}
               className="rounded-full"
-              priority
-           />
+          priority
+        />
            <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-md">
              MVP
            </div>
@@ -287,7 +317,7 @@ export default function Home() {
                   </svg>
                   Generowanie...
                 </span>
-              ) : '3. Generuj Wstępną Wersję'}
+              ) : 'Generuj Wstępną Wersję'}
             </button>
             <p className="mt-3 text-xs text-gray-500 text-center bg-gray-50 p-2 rounded-lg">
                Pamiętaj, że wygenerowany dokument to tylko wersja wstępna i wymaga weryfikacji. To nie jest porada prawna.
@@ -341,7 +371,7 @@ export default function Home() {
              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg mb-6 border border-blue-100 shadow-sm">
                <h3 className="text-lg font-semibold text-gray-800 mb-2">Odblokuj pełną wersję dokumentu</h3>
                <p className="text-sm text-gray-700 mb-3 px-4">
-                 Po dokonaniu płatności otrzymasz <strong>finalną wersję dokumentu</strong> ze wszystkimi uzupełnionymi danymi, <strong>bez placeholderów</strong> i didaskaliów w nawiasach kwadratowych. Dokument będzie gotowy do użycia bez konieczności ręcznego zastępowania pól [tekst w nawiasach].
+                 Po dokonaniu płatności otrzymasz <strong>finalną wersję dokumentu</strong> ze wszystkimi uzupełnionymi danymi. Dokument będzie gotowy do użycia bez konieczności ręcznego zastępowania pól.
                </p>
                <p className="text-xs text-blue-700 font-medium">Oferujemy możliwość profesjonalnej konsultacji treści dokumentu z doświadczonym prawnikiem.</p>
              </div>

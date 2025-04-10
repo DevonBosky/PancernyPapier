@@ -39,11 +39,21 @@ function ConsultationFormContent() {
   ];
   
   const documentTypes = [
-    { id: 'wypowiedzenie_najmu', label: 'Wypowiedzenie umowy najmu' },
-    { id: 'wypowiedzenie_pracy', label: 'Wypowiedzenie umowy o pracę' },
-    { id: 'odwolanie_mandat', label: 'Odwołanie od mandatu' },
+    { id: 'wypowiedzenie_najmu', label: 'Wypowiedzenie umowy najmu (przez najemcę)' },
+    { id: 'wypowiedzenie_pracy', label: 'Wypowiedzenie umowy o pracę (przez pracownika)' },
+    { id: 'odwolanie_mandat', label: 'Odwołanie od mandatu karnego' },
     { id: 'reklamacja', label: 'Reklamacja towaru lub usługi' },
     { id: 'wezwanie_do_zaplaty', label: 'Wezwanie do zapłaty' },
+    { id: 'odstapienie_od_umowy_konsument', label: 'Odstąpienie od umowy (konsument)' },
+    { id: 'pelnomocnictwo_ogolne', label: 'Pełnomocnictwo ogólne' },
+    { id: 'wniosek_zaswiadczenie', label: 'Wniosek o wydanie zaświadczenia' },
+    { id: 'umowa_pozyczki', label: 'Umowa pożyczki' },
+    { id: 'protokol_zdawczo_odbiorczy', label: 'Protokół zdawczo-odbiorczy lokalu' },
+    { id: 'wypowiedzenie_pracodawca', label: 'Wypowiedzenie umowy o pracę (przez pracodawcę)' },
+    { id: 'umowa_zlecenie', label: 'Umowa zlecenie' },
+    { id: 'umowa_o_dzielo', label: 'Umowa o dzieło' },
+    { id: 'porozumienie_o_splacie', label: 'Porozumienie o spłacie długu w ratach' },
+    { id: 'uchwala_wspolnikow_prosta', label: 'Uchwała wspólników Sp. z o.o.' },
   ];
   
   // Inicjalizacja dostępnych dat (następne 14 dni)
