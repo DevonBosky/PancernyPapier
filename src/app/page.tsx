@@ -201,28 +201,31 @@ export default function Home() {
   };
 
   const handleGeneratePreview = async () => {
-    if (!agreedToTerms) {
-      alert("Musisz zaakceptować regulamin.");
+    if (!selectedDocument) {
+      alert('Proszę wybrać rodzaj dokumentu.');
       return;
     }
-    
-    // Sprawdzam czy używamy formularza pełnomocnictwa
+
     if (selectedDocument === 'pelnomocnictwo_ogolne') {
-      // Walidacja danych formularza pełnomocnictwa
+      // Sprawdzenie czy formularz pełnomocnictwa ma wszystkie wymagane pola
       const { mocodawca, pelnomocnik, zakres_pelnomocnictwa, data, miejscowosc } = pelnomocnictwoData;
       if (!mocodawca.imie || !mocodawca.nazwisko || !mocodawca.adres || !mocodawca.pesel ||
           !pelnomocnik.imie || !pelnomocnik.nazwisko || !pelnomocnik.adres || !pelnomocnik.pesel ||
           (zakres_pelnomocnictwa.typ === 'szczegolowe' && !zakres_pelnomocnictwa.opis) ||
           !data || !miejscowosc) {
-        alert("Proszę wypełnić wszystkie wymagane pola formularza.");
+        alert('Proszę wypełnić wszystkie wymagane pola formularza pełnomocnictwa.');
         return;
       }
-      
-      // Konwersja danych formularza na tekst
-      const formattedText = convertFormDataToText(pelnomocnictwoData);
-      setDetailsInput(formattedText);
-    } else if (!detailsInput.trim()) {
-      alert("Proszę wprowadzić wymagane szczegóły.");
+    } else {
+      // Dla innych dokumentów sprawdzanie pola tekstowego
+      if (!detailsInput.trim()) {
+        alert('Proszę wprowadzić szczegóły potrzebne do wygenerowania dokumentu.');
+        return;
+      }
+    }
+
+    if (!agreedToTerms) {
+      alert('Proszę zaakceptować regulamin serwisu.');
       return;
     }
 
@@ -267,6 +270,86 @@ export default function Home() {
     }
   };
   
+  // Funkcja walidująca dane, do użycia bezpośrednio przy kliknięciu przycisku płatności
+  const validateAndProcess = async (paymentFunction: () => void) => {
+    if (!selectedDocument) {
+      alert('Proszę wybrać rodzaj dokumentu.');
+      return;
+    }
+
+    if (selectedDocument === 'pelnomocnictwo_ogolne') {
+      // Sprawdzenie czy formularz pełnomocnictwa ma wszystkie wymagane pola
+      const { mocodawca, pelnomocnik, zakres_pelnomocnictwa, data, miejscowosc } = pelnomocnictwoData;
+      if (!mocodawca.imie || !mocodawca.nazwisko || !mocodawca.adres || !mocodawca.pesel ||
+          !pelnomocnik.imie || !pelnomocnik.nazwisko || !pelnomocnik.adres || !pelnomocnik.pesel ||
+          (zakres_pelnomocnictwa.typ === 'szczegolowe' && !zakres_pelnomocnictwa.opis) ||
+          !data || !miejscowosc) {
+        alert('Proszę wypełnić wszystkie wymagane pola formularza pełnomocnictwa.');
+        return;
+      }
+    } else {
+      // Dla innych dokumentów sprawdzanie pola tekstowego
+      if (!detailsInput.trim()) {
+        alert('Proszę wprowadzić szczegóły potrzebne do wygenerowania dokumentu.');
+        return;
+      }
+    }
+
+    if (!agreedToTerms) {
+      alert('Proszę zaakceptować regulamin serwisu.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          documentType: selectedDocument, 
+          detailsText: selectedDocument === 'pelnomocnictwo_ogolne' 
+            ? convertFormDataToText(pelnomocnictwoData) 
+            : detailsInput,
+          is_final: true // Generujemy od razu finalną wersję
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Błąd podczas generowania dokumentu');
+      }
+
+      const data = await response.json();
+      if (data.draft) {
+        setPreviewContent(data.draft);
+        paymentFunction();
+      } else {
+        throw new Error('Otrzymano nieprawidłową odpowiedź z serwera.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(`Wystąpił błąd: ${error.message || 'Spróbuj ponownie.'}`);
+      setIsLoading(false);
+    }
+  };
+  
+  // Funkcja obsługi płatności podstawowej z walidacją
+  const handleBasicPaymentWithValidation = () => {
+    validateAndProcess(handleSimulatedPayment);
+  };
+  
+  // Funkcja obsługi płatności rozszerzonej z walidacją
+  const handleExtendedPaymentWithValidation = () => {
+    validateAndProcess(handleExtendedPayment);
+  };
+  
+  // Funkcja obsługi płatności premium z walidacją
+  const handlePremiumPaymentWithValidation = () => {
+    validateAndProcess(handlePremiumPayment);
+  };
+
   // Lista dostępnych informatorów PDF (na razie tylko 5)
   const availableGuides = [
     'wypowiedzenie_pracy',
@@ -293,6 +376,26 @@ export default function Home() {
       // Wyświetl informację o braku gotowego informatora
       alert('Informator dla wybranego dokumentu jest w przygotowaniu. Prosimy o cierpliwość - wkrótce będzie dostępny!');
     }
+  };
+  
+  // Funkcja obsługi symulowanej płatności
+  const handleSimulatedPayment = () => {
+    if (isProcessingPayment || !previewContent) return;
+    
+    // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
+    setIsProcessingPayment(true);
+    setPaymentMessage('Przetwarzanie płatności...');
+    setSelectedPlan('basic');
+    
+    setTimeout(() => {
+      // Symulujemy zakończenie płatności
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
+      setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
+      setShowGuide(false);
+      setShowAssistant(false);
+    }, 2000);
   };
   
   // Funkcja obsługi płatności za pakiet rozszerzony
@@ -361,26 +464,6 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
         console.error('Błąd:', error);
         setPaymentMessage('Dziękujemy za płatność! Dokument jest gotowy, ale wystąpił problem z informatorem.');
       }
-    }, 2000);
-  };
-  
-  // Funkcja obsługi symulowanej płatności
-  const handleSimulatedPayment = () => {
-    if (isProcessingPayment || !previewContent) return;
-    
-    // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
-    setIsProcessingPayment(true);
-    setPaymentMessage('Przetwarzanie płatności...');
-    setSelectedPlan('basic');
-    
-    setTimeout(() => {
-      // Symulujemy zakończenie płatności
-      setIsProcessingPayment(false);
-      setIsPaid(true);
-      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
-      setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
-      setShowGuide(false);
-      setShowAssistant(false);
     }, 2000);
   };
   
@@ -639,215 +722,157 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
               </label>
             </div>
 
-            <div className="mb-6">
-              <button
-                type="button"
-                className={`w-full py-3 px-4 rounded-md text-white font-medium ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                onClick={handleGeneratePreview}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
-                    Generowanie podglądu...
+            {/* Opcje płatności bezpośrednio po formularzu i akceptacji regulaminu */}
+            <div className="space-y-4" id="payment-options">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg mb-6 border border-blue-100 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Wybierz pakiet</h3>
+                <p className="text-sm text-gray-700 mb-3 px-4">
+                  Po dokonaniu płatności otrzymasz <strong>finalną wersję dokumentu</strong> ze wszystkimi uzupełnionymi danymi. Dokument będzie gotowy do użycia bez konieczności ręcznego zastępowania pól.
+                </p>
+              </div>
+              
+              {/* Opcja podstawowa */}
+              <div className="mb-6 bg-white p-4 rounded-lg border border-gray-200 shadow hover:shadow-md transition-all">
+                <div className="flex items-start">
+                  <div className="bg-green-100 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                ) : 'Wygeneruj podgląd dokumentu'}
-              </button>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">Podstawowy dokument</h3>
+                    <p className="text-sm text-gray-600 mt-1 mb-3">
+                      Gotowy do użycia dokument z uzupełnionymi danymi, który możesz natychmiast pobrać i wykorzystać.
+                    </p>
+                  </div>
+                  <div className="text-green-700 font-bold text-lg ml-4">
+                    8 PLN
+                  </div>
+                </div>
+                <button
+                  onClick={handleBasicPaymentWithValidation}
+                  disabled={isProcessingPayment || isLoading || !agreedToTerms}
+                  className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isProcessingPayment && selectedPlan === 'basic' ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Przetwarzanie...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Kup dokument
+                    </span>
+                  )}
+                </button>
+              </div>
+              
+              {/* Opcja rozszerzona */}
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg border-2 border-blue-200 shadow-md hover:shadow-lg transition-all relative">
+                <div className="absolute -top-3 right-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                  Polecane
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-blue-100 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">Dokument + Profesjonalny informator prawny</h3>
+                    <p className="text-sm text-gray-700 mt-1 mb-2">
+                      Otrzymasz kompletny dokument oraz szczegółowy informator prawny zawierający:
+                    </p>
+                    <ul className="text-xs text-gray-700 list-disc pl-5 space-y-1 mb-3">
+                      <li>Podstawę prawną i konkretne przepisy</li>
+                      <li>Instrukcję krok po kroku dla całego procesu</li>
+                      <li>Terminy i potencjalne ryzyka prawne</li>
+                      <li>Odpowiedzi na najczęstsze pytania</li>
+                    </ul>
+                  </div>
+                  <div className="text-blue-700 font-bold text-lg ml-4">
+                    10 PLN
+                  </div>
+                </div>
+                <button
+                  onClick={handleExtendedPaymentWithValidation}
+                  disabled={isProcessingPayment || isLoading || !agreedToTerms}
+                  className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isProcessingPayment && selectedPlan === 'extended' ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Przetwarzanie...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Kup dokument + informator
+                    </span>
+                  )}
+                </button>
+              </div>
+              
+              {/* Opcja premium */}
+              <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-200 shadow-md hover:shadow-lg transition-all">
+                <div className="flex items-start">
+                  <div className="bg-purple-100 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">Pakiet Premium: Dokument + Informator + Asystent Prawny</h3>
+                    <p className="text-sm text-gray-700 mt-1 mb-2">
+                      Zawiera wszystko z poprzednich pakietów oraz:
+                    </p>
+                    <ul className="text-xs text-gray-700 list-disc pl-5 space-y-1 mb-3">
+                      <li>Dostęp do Asystenta Prawnego opartego na AI</li>
+                      <li>Do 5 szczegółowych pytań dotyczących Twojej sprawy</li>
+                      <li>Precyzyjne odpowiedzi uwzględniające polski kontekst prawny</li>
+                      <li>Możliwość doprecyzowania szczegółów Twojej sytuacji</li>
+                    </ul>
+                  </div>
+                  <div className="text-purple-700 font-bold text-lg ml-4">
+                    15 PLN
+                  </div>
+                </div>
+                <button
+                  onClick={handlePremiumPaymentWithValidation}
+                  disabled={isProcessingPayment || isLoading || !agreedToTerms}
+                  className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isProcessingPayment && selectedPlan === 'premium' ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Przetwarzanie...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      Kup pakiet Premium
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           </>
-        )}
-
-        {previewContent && !isPaid && (
-          <section className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <span className="mr-2">4. Podgląd Wstępnej Wersji</span>
-                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium">DEMO</span>
-              </h2>
-            <div 
-              className="relative p-5 border border-gray-200 rounded-lg bg-gray-50 min-h-[200px] overflow-auto select-none shadow-inner" 
-              style={{ userSelect: 'none' }}
-            >
-              <div className="whitespace-pre-wrap text-sm text-gray-700 opacity-70 preview-content">
-                {previewContent.split('\n').map((line, index) => {
-                  // Rozmywamy co trzecią linię i losowo wybrane linie zawierające ważne dane
-                  const shouldBlur = index % 3 === 1 || 
-                    (line.includes('[') && line.includes(']')) || 
-                    line.match(/(kwot|zł|PLN|złot|adres|nazwisk|imię|imie|PESEL|NIP|telefon|email)/i);
-                  
-                  return (
-                    <div 
-                      key={index} 
-                      className={`preview-line ${shouldBlur ? 'blur-effect' : ''}`}
-                    >
-                      {line}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-4xl sm:text-6xl text-gray-300 opacity-50 font-bold transform -rotate-12 select-none">
-                  PODGLĄD
-                </span>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50 to-transparent flex items-end justify-center pb-4">
-                <span className="text-blue-600 font-semibold text-sm px-4 py-1 bg-blue-50 rounded-full border border-blue-100 shadow-sm">
-                  Pełna treść dostępna po zakupie
-                </span>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {previewContent && !isPaid && (
-          <section className="mb-8 text-center">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-lg mb-6 border border-blue-100 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Odblokuj pełną wersję dokumentu</h3>
-              <p className="text-sm text-gray-700 mb-3 px-4">
-                Po dokonaniu płatności otrzymasz <strong>finalną wersję dokumentu</strong> ze wszystkimi uzupełnionymi danymi. Dokument będzie gotowy do użycia bez konieczności ręcznego zastępowania pól.
-              </p>
-            </div>
-            
-            {/* Opcja podstawowa */}
-            <div className="mb-6 bg-white p-4 rounded-lg border border-gray-200 shadow hover:shadow-md transition-all">
-              <div className="flex items-start">
-                <div className="bg-green-100 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Podstawowy dokument</h3>
-                  <p className="text-sm text-gray-600 mt-1 mb-3">
-                    Gotowy do użycia dokument z uzupełnionymi danymi, który możesz natychmiast pobrać i wykorzystać.
-                  </p>
-                </div>
-                <div className="text-green-700 font-bold text-lg ml-4">
-                  8 PLN
-                </div>
-              </div>
-              <button
-                onClick={handleSimulatedPayment}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {isProcessingPayment && selectedPlan === 'basic' ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Przetwarzanie...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Kup dokument
-                  </span>
-                )}
-              </button>
-            </div>
-            
-            {/* Opcja rozszerzona */}
-            <div className="mb-6 bg-blue-50 p-4 rounded-lg border-2 border-blue-200 shadow-md hover:shadow-lg transition-all relative">
-              <div className="absolute -top-3 right-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                Polecane
-              </div>
-              <div className="flex items-start">
-                <div className="bg-blue-100 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Dokument + Profesjonalny informator prawny</h3>
-                  <p className="text-sm text-gray-700 mt-1 mb-2">
-                    Otrzymasz kompletny dokument oraz szczegółowy informator prawny zawierający:
-                  </p>
-                  <ul className="text-xs text-gray-700 list-disc pl-5 space-y-1 mb-3">
-                    <li>Podstawę prawną i konkretne przepisy</li>
-                    <li>Instrukcję krok po kroku dla całego procesu</li>
-                    <li>Terminy i potencjalne ryzyka prawne</li>
-                    <li>Odpowiedzi na najczęstsze pytania</li>
-                  </ul>
-                </div>
-                <div className="text-blue-700 font-bold text-lg ml-4">
-                  10 PLN
-                </div>
-              </div>
-              <button
-                onClick={handleExtendedPayment}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {isProcessingPayment && selectedPlan === 'extended' ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Przetwarzanie...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Kup dokument + informator
-                  </span>
-                )}
-              </button>
-            </div>
-            
-            {/* Opcja premium */}
-            <div className="bg-purple-50 p-4 rounded-lg border-2 border-purple-200 shadow-md hover:shadow-lg transition-all">
-              <div className="flex items-start">
-                <div className="bg-purple-100 p-2 rounded-full mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">Pakiet Premium: Dokument + Informator + Asystent Prawny</h3>
-                  <p className="text-sm text-gray-700 mt-1 mb-2">
-                    Zawiera wszystko z poprzednich pakietów oraz:
-                  </p>
-                  <ul className="text-xs text-gray-700 list-disc pl-5 space-y-1 mb-3">
-                    <li>Dostęp do Asystenta Prawnego opartego na AI</li>
-                    <li>Do 5 szczegółowych pytań dotyczących Twojej sprawy</li>
-                    <li>Precyzyjne odpowiedzi uwzględniające polski kontekst prawny</li>
-                    <li>Możliwość doprecyzowania szczegółów Twojej sytuacji</li>
-                  </ul>
-                </div>
-                <div className="text-purple-700 font-bold text-lg ml-4">
-                  15 PLN
-                </div>
-              </div>
-              <button
-                onClick={handlePremiumPayment}
-                disabled={isProcessingPayment || isLoading}
-                className="w-full mt-2 inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {isProcessingPayment && selectedPlan === 'premium' ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Przetwarzanie...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                    Kup pakiet Premium
-                  </span>
-                )}
-              </button>
-            </div>
-          </section>
         )}
         
         {isPaid && finalContent && (
