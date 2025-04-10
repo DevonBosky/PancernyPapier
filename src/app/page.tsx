@@ -267,24 +267,32 @@ export default function Home() {
     }
   };
   
-  // Funkcja obsługi symulowanej płatności
-  const handleSimulatedPayment = () => {
-    if (isProcessingPayment || !previewContent) return;
-    
-    // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
-    setIsProcessingPayment(true);
-    setPaymentMessage('Przetwarzanie płatności...');
-    setSelectedPlan('basic');
-    
-    setTimeout(() => {
-      // Symulujemy zakończenie płatności
-      setIsProcessingPayment(false);
-      setIsPaid(true);
-      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
-      setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
-      setShowGuide(false);
-      setShowAssistant(false);
-    }, 2000);
+  // Lista dostępnych informatorów PDF (na razie tylko 5)
+  const availableGuides = [
+    'wypowiedzenie_pracy',
+    'umowa_zlecenie',
+    'umowa_o_dzielo',
+    'protokol_zdawczo_odbiorczy',
+    'wezwanie_do_zaplaty'
+  ];
+  
+  // Funkcja sprawdzająca czy istnieje informator dla danego dokumentu
+  const isGuideAvailable = (documentType: string) => {
+    return availableGuides.includes(documentType);
+  };
+  
+  // Funkcja pobierania informatora w formacie PDF
+  const handleGuideDownload = () => {
+    if (isGuideAvailable(selectedDocument)) {
+      // Pobieranie odpowiedniego informatora PDF na podstawie typu dokumentu
+      const pdfUrl = `/guides/${selectedDocument}.pdf`;
+      
+      // Otwieramy plik w nowym oknie
+      window.open(pdfUrl, '_blank');
+    } else {
+      // Wyświetl informację o braku gotowego informatora
+      alert('Informator dla wybranego dokumentu jest w przygotowaniu. Prosimy o cierpliwość - wkrótce będzie dostępny!');
+    }
   };
   
   // Funkcja obsługi płatności za pakiet rozszerzony
@@ -304,9 +312,12 @@ export default function Home() {
         setShowGuide(true);
         setShowAssistant(false);
         
-        // Ustawiamy predefiniowany informator zamiast generować nowy
+        // Sprawdzamy, czy istnieje informator dla wybranego dokumentu
         const documentType = documentOptions.find(option => option.value === selectedDocument)?.label || selectedDocument;
-        setGuideContent(`# Profesjonalny informator: ${documentType}
+        
+        if (isGuideAvailable(selectedDocument)) {
+          // Informacja o dostępnym informatorze
+          setGuideContent(`# Profesjonalny informator: ${documentType}
 
 ## Dostępny jako plik PDF
 
@@ -319,6 +330,31 @@ Informator zawiera:
 - Odpowiedzi na najczęstsze pytania
 
 **Kliknij przycisk "Pobierz informator PDF" poniżej, aby uzyskać dostęp do pełnej wersji.**`);
+        } else {
+          // Efektowna zaślepka dla niedostępnych informatorów
+          setGuideContent(`# Profesjonalny informator: ${documentType}
+
+## W przygotowaniu
+
+![Informator w przygotowaniu](/images/informator-coming-soon.jpg)
+
+### Ten informator jest obecnie w trakcie opracowywania przez nasz zespół prawny.
+
+Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla dokumentu **${documentType}**. Nasz zespół prawników dokłada wszelkich starań, aby dostarczyć Ci najwyższej jakości materiały.
+
+#### Co znajdziesz w pełnej wersji informatora:
+- Podstawę prawną dokumentu i odniesienia do przepisów
+- Krok po kroku procedury związane z dokumentem
+- Szczegółowe informacje o terminach i wymaganiach
+- Wskazówki dotyczące potencjalnych trudności
+- Odpowiedzi na najczęściej zadawane pytania
+
+#### Tymczasem, jeśli masz pilne pytania:
+- Skorzystaj z naszego Asystenta Prawnego (dostępny w pakiecie Premium)
+- Skontaktuj się z nami poprzez formularz na stronie kontaktowej
+
+**Dziękujemy za zrozumienie i cierpliwość!**`);
+        }
         
         setPaymentMessage('Dziękujemy za płatność! Twój dokument i informator prawny są gotowe.');
       } catch (error) {
@@ -328,13 +364,24 @@ Informator zawiera:
     }, 2000);
   };
   
-  // Funkcja pobierania informatora w formacie PDF
-  const handleGuideDownload = () => {
-    // Pobieranie odpowiedniego informatora PDF na podstawie typu dokumentu
-    const pdfUrl = `/guides/${selectedDocument}.pdf`;
+  // Funkcja obsługi symulowanej płatności
+  const handleSimulatedPayment = () => {
+    if (isProcessingPayment || !previewContent) return;
     
-    // Otwieramy plik w nowym oknie
-    window.open(pdfUrl, '_blank');
+    // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
+    setIsProcessingPayment(true);
+    setPaymentMessage('Przetwarzanie płatności...');
+    setSelectedPlan('basic');
+    
+    setTimeout(() => {
+      // Symulujemy zakończenie płatności
+      setIsProcessingPayment(false);
+      setIsPaid(true);
+      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
+      setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
+      setShowGuide(false);
+      setShowAssistant(false);
+    }, 2000);
   };
   
   // Funkcja obsługi płatności za pakiet premium
