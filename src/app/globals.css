@@ -109,3 +109,28 @@ textarea::placeholder {
 .css-1n6sfyn-MenuList {
   color: #111827 !important; /* Ciemniejszy kolor */
 }
+
+/* Zwiększony kontrast dla tekstu w formatkach i informatora */
+.prose {
+  color: #111827 !important; /* Ciemniejszy kolor tekstu */
+   /* Nieco pogrubiona czcionka */
+}
+
+.prose strong {
+  color: #000000;
+  font-weight: 600;
+}
+
+.prose h2, .prose h3, .prose h4 {
+  color: #000000;
+  font-weight: 700;
+}
+
+.prose p, .prose li {
+  color: #111827;
+}
+
+.prose blockquote {
+  border-left-color: #2563eb;
+  color: #111827;
+}

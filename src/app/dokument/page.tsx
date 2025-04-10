@@ -144,24 +144,22 @@ export default function DocumentPage() {
     
     if (isGuideAvailable(docType)) {
       // Informacja o dostępnym informatorze
-      setGuideContent(`# Profesjonalny informator: ${documentName}
+      setGuideContent(`## W tym informatorze znajdziesz:
 
-## Dostępny jako plik PDF
+🔹 **Co trzeba zrobić krok po kroku** – od przygotowania po realizację
 
-Twój kompleksowy informator prawny jest dostępny do pobrania jako plik PDF. Kliknij przycisk poniżej, aby pobrać pełną wersję informatora.
+🔹 **Jakie obowiązują terminy** – i kiedy zaczynają biec
 
-Informator zawiera:
-- Podstawę prawną i konkretne przepisy
-- Instrukcję krok po kroku dla całego procesu
-- Terminy i potencjalne ryzyka prawne
-- Odpowiedzi na najczęstsze pytania
+🔹 **Na co uważać, by nie popełnić błędu** – potencjalne ryzyka i jak im zapobiec
 
-**Kliknij przycisk "Pobierz informator PDF" poniżej, aby uzyskać dostęp do pełnej wersji.**`);
+🔹 **Co grozi za spóźnienie lub pomyłkę** – czyli skutki nieterminowego działania
+
+🔹 **Najczęstsze pytania i jasne odpowiedzi** – bez prawniczego żargonu
+
+Twój kompleksowy informator prawny jest dostępny do pobrania jako plik PDF. Kliknij przycisk "Pobierz informator PDF", aby otrzymać pełną wersję poradnika.`);
     } else {
       // Efektowna zaślepka dla niedostępnych informatorów
-      setGuideContent(`# Profesjonalny informator: ${documentName}
-
-## W przygotowaniu
+      setGuideContent(`# Informator w przygotowaniu
 
 ![Informator w przygotowaniu](/images/informator-coming-soon.jpg)
 
@@ -254,11 +252,31 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
     }
   };
   
-  // Funkcja pobierania jako TXT
-  const handleDownloadTxt = async () => {
-    const { saveAs } = await import('file-saver');
-    const blob = new Blob([documentContent], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, `${documentType || 'dokument'}.txt`);
+  // Funkcja pobierania jako DOC
+  const handleDownloadTxt = () => {
+    try {
+      // Tworzenie Blob z treścią dokumentu
+      const blob = new Blob([documentContent], { type: 'application/msword' });
+      
+      // Tworzenie URL dla Blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Tworzenie elementu <a> do pobrania
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${documentType || 'dokument'}.doc`;
+      document.body.appendChild(a);
+      
+      // Kliknięcie w link i czyszczenie
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log('Dokument został pobrany pomyślnie');
+    } catch (error) {
+      console.error('Błąd podczas pobierania dokumentu:', error);
+      alert('Wystąpił błąd podczas pobierania dokumentu. Spróbuj ponownie lub skopiuj tekst do schowka.');
+    }
   };
   
   // Funkcja obsługi konsultacji z prawnikiem
@@ -373,7 +391,7 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
               Pobierz informator PDF
             </button>
           </div>
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(guideContent) }} />
+          <div className="prose max-w-none text-gray-900" dangerouslySetInnerHTML={{ __html: marked(guideContent) }} />
         </div>
       )}
       
