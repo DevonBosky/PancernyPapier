@@ -50,6 +50,8 @@ body {
 
 .document-select__option {
   padding: 0.625rem 1rem !important;
+  color: #111827 !important; /* text-gray-900 dla lepszego kontrastu */
+  font-weight: 500 !important;
 }
 
 .document-select__option--is-focused {
@@ -59,6 +61,11 @@ body {
 .document-select__option--is-selected {
   background-color: #3B82F6 !important; /* bg-blue-500 */
   color: white !important;
+}
+
+.document-select__single-value {
+  color: #111827 !important; /* text-gray-900 dla lepszego kontrastu */
+  font-weight: 500 !important;
 }
 
 .group-header {
