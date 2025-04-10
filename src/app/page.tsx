@@ -1,17 +1,18 @@
 'use client'; // Potrzebne dla useState
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image'; // Dodano import dla logo
 import { useRouter } from 'next/navigation';
 import Select, { GroupBase, SingleValue, ActionMeta } from 'react-select';
 import Link from 'next/link';
 // Importuję komponent formularza pełnomocnictwa
-import PelnomocnictwoForm, { PelnomocnictwoFormData } from '@/components/PelnomocnictwoForm';
+import PelnomocnictwoForm, { PelnomocnictwoFormData } from '../components/PelnomocnictwoForm';
 // Import biblioteki do przetwarzania markdown
 import { marked } from 'marked';
 // Usunięto importy file-saver i html-to-docx z góry pliku
-// import { saveAs } from 'file-saver'; 
+import { saveAs } from 'file-saver'; 
 // const htmlToDocx = require('html-to-docx'); 
+import Head from 'next/head';
 
 // Definicje typów dokumentów i ich pól (można przenieść do osobnego pliku później)
 type DocumentType = 
@@ -693,6 +694,14 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
 
   return (
     <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 bg-gradient-to-b from-slate-50 to-slate-100">
+      <Head>
+        <title>Pancerny Papier</title>
+        <meta name="description" content="Profesjonalne dokumenty prawne w kilka minut" />
+        <meta name="keywords" content="dokumenty prawne, profesjonalne, szybko, online" />
+        <meta name="author" content="Pancerny Papier" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       <div className="flex flex-col items-center mb-10">
          <div className="relative mb-4 shadow-lg rounded-full p-2 bg-white">
         <Image
