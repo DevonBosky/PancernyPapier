@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image'; // Dodano import dla logo
+import { useRouter } from 'next/navigation';
 // Usunięto importy file-saver i html-to-docx z góry pliku
 // import { saveAs } from 'file-saver'; 
 // const htmlToDocx = require('html-to-docx'); 
@@ -34,6 +35,7 @@ const documentPlaceholders: Record<DocumentType, string> = {
 // TODO: Zdefiniować pola dla każdego typu dokumentu
 
 export default function Home() {
+  const router = useRouter();
   const [selectedDocument, setSelectedDocument] = useState<DocumentType | ''>('');
   const [detailsInput, setDetailsInput] = useState<string>('');
   const [previewContent, setPreviewContent] = useState<string>('');
@@ -157,7 +159,8 @@ export default function Home() {
 
   // Funkcja obsługi konsultacji z prawnikiem
   const handleConsultationClick = () => {
-    alert('Funkcjonalność umawiania konsultacji zostanie dodana wkrótce! Skontaktuj się z nami pod adresem kontakt@pancernypapier.pl');
+    // Przekierowanie do podstrony konsultacji
+    router.push('/konsultacje');
   };
 
   // Dodanie stylu dla rozmytych linii
@@ -400,7 +403,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleConsultationClick}
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400 transition-all duration-200"
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -416,7 +419,6 @@ export default function Home() {
       <footer className="mt-12 text-center">
         <div className="flex justify-center space-x-5 mb-4">
           <a href="/regulamin" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-800 underline">Regulamin</a>
-          <a href="/polityka-prywatnosci" className="text-sm text-blue-600 hover:text-blue-800 underline">Polityka Prywatności</a>
           <a href="/konsultacje" className="text-sm text-blue-600 hover:text-blue-800 underline">Konsultacje</a>
         </div>
         <p className="text-xs text-gray-500">© {new Date().getFullYear()} Pancerny Papier. Wszelkie prawa zastrzeżone.</p>

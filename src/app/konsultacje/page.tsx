@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Definicja typu dla prawnika
 interface Lawyer {
@@ -50,142 +51,16 @@ const lawyers: Lawyer[] = [
   },
 ];
 
-// Komponent wyświetlający kalendarz z dostępnymi terminami
-interface ScheduleCalendarProps {
-  lawyer: Lawyer;
-  onClose: () => void;
-}
-
-const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({ lawyer, onClose }) => {
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedTime, setSelectedTime] = useState<string>('');
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
-  
-  // Symulujemy dostępne godziny dla każdego dnia tygodnia
-  const availableHours = ['9:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
-  
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setFormSubmitted(true);
-    // Tutaj można by wysłać dane do API
-  };
-  
-  if (formSubmitted) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Konsultacja została umówiona!</h3>
-            <p className="text-gray-600">
-              Potwierdzenie spotkania z {lawyer.name} w dniu {selectedDate} o godz. {selectedTime} zostało wysłane na Twój adres email.
-            </p>
-          </div>
-          <button 
-            onClick={onClose}
-            className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Zamknij
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Umów konsultację z {lawyer.name}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Wybierz dzień:
-            </label>
-            <select 
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              required
-            >
-              <option value="">-- Wybierz --</option>
-              {lawyer.availability.map((day) => (
-                <option key={day} value={day}>
-                  {day} - {new Date().toLocaleDateString('pl-PL')}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Wybierz godzinę:
-            </label>
-            <select 
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={selectedTime}
-              onChange={(e) => setSelectedTime(e.target.value)}
-              required
-              disabled={!selectedDate}
-            >
-              <option value="">-- Wybierz --</option>
-              {availableHours.map((time) => (
-                <option key={time} value={time}>{time}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Twój adres email:
-            </label>
-            <input 
-              type="email" 
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="jan.kowalski@example.com"
-              required
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Krótki opis sprawy:
-            </label>
-            <textarea 
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              rows={3}
-              placeholder="Opisz krótko swoją sprawę, aby prawnik mógł się przygotować..."
-              required
-            />
-          </div>
-          
-          <button 
-            type="submit"
-            className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            disabled={!selectedDate || !selectedTime}
-          >
-            Potwierdź rezerwację
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
 // Główny komponent strony
 export default function KonsultacjePage() {
-  const [selectedLawyer, setSelectedLawyer] = useState<Lawyer | null>(null);
+  const router = useRouter();
+  
+  // Funkcja do przekierowania na formularz kontaktowy
+  const handleSelectLawyer = (lawyerId: number) => {
+    alert('Funkcjonalność umawiania konsultacji zostanie dostępna wkrótce. Skontaktuj się z nami pod adresem kontakt@pancernypapier.pl');
+    // Docelowo będziemy przekierowywać tak:
+    // router.push(`/konsultacje/umow?lawyer=${lawyerId}`);
+  };
   
   return (
     <main className="flex min-h-screen flex-col items-center p-6 sm:p-12 bg-gradient-to-b from-slate-50 to-slate-100">
@@ -238,7 +113,7 @@ export default function KonsultacjePage() {
                   </div>
                   
                   <button
-                    onClick={() => setSelectedLawyer(lawyer)}
+                    onClick={() => handleSelectLawyer(lawyer.id)}
                     className="w-full py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Wybierz termin
@@ -289,13 +164,6 @@ export default function KonsultacjePage() {
       <footer className="text-center mb-8">
         <p className="text-xs text-gray-500">© {new Date().getFullYear()} Pancerny Papier. Wszelkie prawa zastrzeżone.</p>
       </footer>
-      
-      {selectedLawyer && (
-        <ScheduleCalendar 
-          lawyer={selectedLawyer} 
-          onClose={() => setSelectedLawyer(null)} 
-        />
-      )}
     </main>
   );
 } 
