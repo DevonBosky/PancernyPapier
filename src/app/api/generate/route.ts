@@ -60,14 +60,21 @@ export async function POST(request: Request) {
     
     if (is_final) {
       // Prompt dla wersji finalnej - bez placeholderów/didaskaliów
-      systemPrompt = `Jesteś pomocnym asystentem specjalizującym się w generowaniu finalnych wersji polskich dokumentów prawnych i administracyjnych. Odpowiadaj wyłącznie treścią dokumentu, bez dodatkowych komentarzy, wstępów czy pożegnań. Używaj formalnego języka polskiego. Dbaj o poprawną strukturę dokumentu, uwzględniając datę, miejscowość, dane stron, treść główną i podpis. WAŻNE: Nie używaj placeholderów jak [Data], [Miejsce], [Twoje dane] - zamiast tego wstaw rzeczywiste dane z informacji podanych przez użytkownika. Jeśli jakiejś informacji brakuje, użyj domyślnych wartości, które brzmią realistycznie (np. dzisiejsza data, 'Warszawa' jako miejscowość, itp.).`;
+      systemPrompt = `Jesteś czołowym polskim radcą prawnym tworzącym profesjonalne dokumenty prawne. Generuj dokumenty precyzyjne, zgodne z aktualnym prawem polskim i kompletne. Używaj formalnej terminologii prawniczej i powołuj się na właściwe przepisy. Odpowiadaj wyłącznie treścią dokumentu, bez komentarzy czy wyjaśnień.`;
       
-      userPrompt = `Wygeneruj FINALNĄ wersję dokumentu: "${documentTypeLabels[documentType]}" zawierającą WSZYSTKIE potrzebne elementy bez placeholderów/didaskaliów. Użyj następujących informacji dostarczonych przez użytkownika: \n\n${detailsText}\n\nNie używaj placeholderów jak [Miejsce na dane] - zamiast tego użyj konkretnych danych z informacji podanych przez użytkownika lub wstaw realistyczne domyślne dane.`;
+      userPrompt = `Utwórz finalną wersję dokumentu: "${documentTypeLabels[documentType] || documentType}" na podstawie: 
+
+${detailsText}
+
+Wymagania: 
+${getDocumentSpecificRequirements(documentType)}
+
+Dokument musi być profesjonalny, zawierać właściwe odwołania do przepisów i wszystkie wymagane elementy formalne. Nie używaj placeholderów - zastosuj konkretne dane z informacji lub realistyczne wartości domyślne.`;
     } else {
       // Prompt dla wersji wstępnej - z placeholderami/didaskaliami
       systemPrompt = `Jesteś pomocnym asystentem specjalizującym się w generowaniu wstępnych wersji roboczych popularnych polskich dokumentów prawnych i administracyjnych. Odpowiadaj wyłącznie treścią dokumentu, bez dodatkowych komentarzy, wstępów czy pożegnań. Używaj formalnego języka polskiego. Dbaj o poprawną strukturę dokumentu, uwzględniając miejsce na datę, miejscowość, dane stron, treść główną i podpis. WAŻNE: Używaj placeholderów w nawiasach kwadratowych jak [Data], [Miejsce], [Twoje dane] zamiast konkretnych danych, aby zachęcić użytkownika do zakupu pełnej wersji.`;
       
-      userPrompt = `Wygeneruj WSTĘPNĄ ROBOCZĄ wersję dokumentu: "${documentTypeLabels[documentType]}". W tej wersji używaj placeholderów/didaskaliów w nawiasach kwadratowych dla wszystkich ważnych informacji (np. [Data], [Miejsce], [Twoje dane], [Podpis]), aby użytkownik zrozumiał, że to tylko wersja demonstracyjna i potrzebuje kupić pełną wersję, aby uzyskać kompletny dokument. Bazuj na następujących informacjach od użytkownika, ale NIE wypełniaj dokumentu konkretnymi danymi: \n\n${detailsText}`;
+      userPrompt = `Wygeneruj WSTĘPNĄ ROBOCZĄ wersję dokumentu: "${documentTypeLabels[documentType] || documentType}". W tej wersji używaj placeholderów/didaskaliów w nawiasach kwadratowych dla wszystkich ważnych informacji (np. [Data], [Miejsce], [Twoje dane], [Podpis]), aby użytkownik zrozumiał, że to tylko wersja demonstracyjna i potrzebuje kupić pełną wersję, aby uzyskać kompletny dokument. Bazuj na następujących informacjach od użytkownika, ale NIE wypełniaj dokumentu konkretnymi danymi: \n\n${detailsText}`;
     }
 
     console.log('Rozpoczynanie wywołania API OpenAI...');
@@ -115,4 +122,27 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
+}
+
+// Dodana funkcja zwracająca wymagania dla poszczególnych typów dokumentów
+function getDocumentSpecificRequirements(documentType: DocumentType | string): string {
+  const requirements: Record<string, string> = {
+    'wypowiedzenie_najmu': `Oznaczenie stron, data umowy, adres lokalu, termin wypowiedzenia (art. 673 KC), data końcowa, podstawa prawna.`,
+    
+    'wypowiedzenie_pracy': `Dane pracownika i pracodawcy, okres wypowiedzenia zgodny z art. 36 KP, pouczenie o odwołaniu do sądu pracy.`,
+    
+    'odwolanie_mandat': `Dane organu, numer mandatu, data, okoliczności, uzasadnienie prawne i faktyczne, wnioski dowodowe.`,
+    
+    'reklamacja': `Dane sprzedawcy, przedmiot reklamacji, data zakupu, opis wady, żądanie (art. 556-576 KC), termin rozpatrzenia.`,
+    
+    'wezwanie_do_zaplaty': `Dane stron, określenie zobowiązania, kwota z odsetkami, numer konta, termin zapłaty, pouczenie (art. 455, 481 KC).`,
+    
+    'pelnomocnictwo_ogolne': `Dane mocodawcy i pełnomocnika, zakres umocowania (art. 98 KC), okres obowiązywania, prawo substytucji.`,
+    
+    'umowa_o_dzielo': `Dane stron, przedmiot umowy, termin wykonania, wynagrodzenie, prawa autorskie (art. 627-646 KC), odpowiedzialność za wady.`,
+    
+    'umowa_zlecenie': `Dane stron, przedmiot zlecenia, termin wykonania, wynagrodzenie, obowiązki zleceniobiorcy (art. 734-751 KC).`
+  };
+
+  return requirements[documentType] || `Wszystkie wymagane prawem elementy dla tego typu dokumentu.`;
 } 
