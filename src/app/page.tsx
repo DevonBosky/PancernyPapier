@@ -126,6 +126,11 @@ export default function Home() {
   const [showAssistant, setShowAssistant] = useState<boolean>(false);
   const [guideContent, setGuideContent] = useState<string>('');
   
+  // Dodaję stan dla okna modalnego
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalMessage, setModalMessage] = useState<string>('');
+  const [modalStep, setModalStep] = useState<'payment' | 'generation' | 'complete'>('payment');
+  
   // Definiuję typ wiadomości asystenta
   type AssistantMessageType = {
     role: 'user' | 'assistant';
@@ -300,54 +305,83 @@ export default function Home() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          documentType: selectedDocument, 
-          detailsText: selectedDocument === 'pelnomocnictwo_ogolne' 
-            ? convertFormDataToText(pelnomocnictwoData) 
-            : detailsInput,
-          is_final: true // Generujemy od razu finalną wersję
-        }),
-      });
+    // Otwieramy okno modalne i rozpoczynamy proces płatności
+    setIsModalOpen(true);
+    setModalMessage('Przetwarzanie płatności...');
+    setModalStep('payment');
+    setIsProcessingPayment(true);
+    
+    // Symulujemy płatność
+    setTimeout(async () => {
+      // Po zakończeniu płatności aktualizujemy status
+      setModalMessage('Generowanie dokumentu...');
+      setModalStep('generation');
+      
+      try {
+        // Wykonujemy zapytanie API do generowania dokumentu
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            documentType: selectedDocument, 
+            detailsText: selectedDocument === 'pelnomocnictwo_ogolne' 
+              ? convertFormDataToText(pelnomocnictwoData) 
+              : detailsInput,
+            is_final: true // Generujemy od razu finalną wersję
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Błąd podczas generowania dokumentu');
-      }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Błąd podczas generowania dokumentu');
+        }
 
-      const data = await response.json();
-      if (data.draft) {
-        setPreviewContent(data.draft);
-        paymentFunction();
-      } else {
-        throw new Error('Otrzymano nieprawidłową odpowiedź z serwera.');
+        const data = await response.json();
+        if (data.draft) {
+          // Zapisujemy wygenerowany dokument w localStorage, aby móc go odzyskać na stronie docelowej
+          localStorage.setItem('generatedDocument', data.draft);
+          localStorage.setItem('documentType', selectedDocument);
+          localStorage.setItem('paymentPlan', selectedPlan);
+          
+          // Aktualizujemy modalny komunikat na moment
+          setModalMessage('Dokument gotowy! Przekierowujemy...');
+          setModalStep('complete');
+          
+          // Po krótkim opóźnieniu przekierowujemy na stronę z dokumentem
+          setTimeout(() => {
+            router.push('/dokument');
+          }, 1000);
+          
+        } else {
+          throw new Error('Otrzymano nieprawidłową odpowiedź z serwera.');
+        }
+      } catch (error: any) {
+        console.error(error);
+        setIsModalOpen(false);
+        setIsProcessingPayment(false);
+        alert(`Wystąpił błąd: ${error.message || 'Spróbuj ponownie.'}`);
       }
-    } catch (error: any) {
-      console.error(error);
-      alert(`Wystąpił błąd: ${error.message || 'Spróbuj ponownie.'}`);
-      setIsLoading(false);
-    }
+    }, 2000);
   };
   
   // Funkcja obsługi płatności podstawowej z walidacją
   const handleBasicPaymentWithValidation = () => {
-    validateAndProcess(handleSimulatedPayment);
+    setSelectedPlan('basic');
+    validateAndProcess(() => {});
   };
   
   // Funkcja obsługi płatności rozszerzonej z walidacją
   const handleExtendedPaymentWithValidation = () => {
-    validateAndProcess(handleExtendedPayment);
+    setSelectedPlan('extended');
+    validateAndProcess(() => {});
   };
   
   // Funkcja obsługi płatności premium z walidacją
   const handlePremiumPaymentWithValidation = () => {
-    validateAndProcess(handlePremiumPayment);
+    setSelectedPlan('premium');
+    validateAndProcess(() => {});
   };
 
   // Lista dostępnych informatorów PDF (na razie tylko 5)
@@ -380,7 +414,7 @@ export default function Home() {
   
   // Funkcja obsługi symulowanej płatności
   const handleSimulatedPayment = () => {
-    if (isProcessingPayment || !previewContent) return;
+    if (isProcessingPayment) return;
     
     // Symulacja procesu płatności dla MVP (w rzeczywistej aplikacji użylibyśmy Stripe)
     setIsProcessingPayment(true);
@@ -391,16 +425,19 @@ export default function Home() {
       // Symulujemy zakończenie płatności
       setIsProcessingPayment(false);
       setIsPaid(true);
-      setFinalContent(previewContent); // W pełnej implementacji tu byłoby wywołanie API
       setPaymentMessage('Dziękujemy za płatność! Twój dokument jest gotowy do pobrania.');
       setShowGuide(false);
       setShowAssistant(false);
+      // Przewijamy do sekcji z gotowym dokumentem
+      setTimeout(() => {
+        document.getElementById('finalDocumentArea')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }, 2000);
   };
   
   // Funkcja obsługi płatności za pakiet rozszerzony
   const handleExtendedPayment = async () => {
-    if (isProcessingPayment || !previewContent) return;
+    if (isProcessingPayment) return;
     
     setIsProcessingPayment(true);
     setPaymentMessage('Przetwarzanie płatności za pakiet rozszerzony...');
@@ -411,7 +448,6 @@ export default function Home() {
       try {
         setIsProcessingPayment(false);
         setIsPaid(true);
-        setFinalContent(previewContent);
         setShowGuide(true);
         setShowAssistant(false);
         
@@ -460,6 +496,10 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
         }
         
         setPaymentMessage('Dziękujemy za płatność! Twój dokument i informator prawny są gotowe.');
+        // Przewijamy do sekcji z gotowym dokumentem
+        setTimeout(() => {
+          document.getElementById('finalDocumentArea')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       } catch (error) {
         console.error('Błąd:', error);
         setPaymentMessage('Dziękujemy za płatność! Dokument jest gotowy, ale wystąpił problem z informatorem.');
@@ -469,7 +509,7 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
   
   // Funkcja obsługi płatności za pakiet premium
   const handlePremiumPayment = async () => {
-    if (isProcessingPayment || !previewContent) return;
+    if (isProcessingPayment) return;
     
     setIsProcessingPayment(true);
     setPaymentMessage('Przetwarzanie płatności za pakiet premium...');
@@ -479,7 +519,6 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
       try {
         setIsProcessingPayment(false);
         setIsPaid(true);
-        setFinalContent(previewContent);
         setShowGuide(true);
         setShowAssistant(true);
         
@@ -489,17 +528,21 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
           ? convertFormDataToText(pelnomocnictwoData) 
           : detailsInput;
           
-        const guideResponse = await fetch('/api/generate-guide', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ documentType, detailsText: context })
-        });
-        
-        if (guideResponse.ok) {
-          const data = await guideResponse.json();
-          setGuideContent(data.guide);
-        } else {
-          console.error('Błąd generowania poradnika');
+        try {
+          const guideResponse = await fetch('/api/generate-guide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ documentType, detailsText: context })
+          });
+          
+          if (guideResponse.ok) {
+            const data = await guideResponse.json();
+            setGuideContent(data.guide);
+          } else {
+            throw new Error('Błąd generowania poradnika');
+          }
+        } catch (error) {
+          console.error('Błąd generowania poradnika:', error);
           setGuideContent('# Przepraszamy\nWystąpił błąd podczas generowania informatora prawnego. Spróbuj ponownie później.');
         }
         
@@ -513,9 +556,15 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
         
         setAssistantQuestionsLeft(5);
         setPaymentMessage('Dziękujemy za płatność! Twój dokument, informator i dostęp do Asystenta są gotowe.');
+        
+        // Przewijamy do sekcji z gotowym dokumentem
+        setTimeout(() => {
+          document.getElementById('finalDocumentArea')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       } catch (error) {
         console.error('Błąd:', error);
         setPaymentMessage('Dziękujemy za płatność! Wystąpił problem z generowaniem niektórych elementów.');
+        setIsLoading(false);
       }
     }, 2000);
   };
@@ -1003,6 +1052,43 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
         )}
 
       </div>
+
+      {/* Okno modalne informujące o statusie */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div className="text-center">
+              {modalStep === 'payment' && (
+                <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              
+              {modalStep === 'generation' && (
+                <svg className="animate-pulse h-12 w-12 text-green-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              
+              {modalStep === 'complete' && (
+                <svg className="h-12 w-12 text-green-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {modalStep === 'payment' && 'Przetwarzanie płatności'}
+                {modalStep === 'generation' && 'Generowanie dokumentu'}
+                {modalStep === 'complete' && 'Gotowe!'}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {modalMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="mt-12 text-center">
         <div className="flex justify-center space-x-5 mb-4">
