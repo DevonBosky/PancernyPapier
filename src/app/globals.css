@@ -24,3 +24,48 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Niestandardowe style dla react-select */
+.document-select__control {
+  border-radius: 0.5rem !important;
+  border-color: #D1D5DB !important; /* border-gray-300 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  min-height: 2.75rem !important;
+}
+
+.document-select__control--is-focused {
+  border-color: #3B82F6 !important; /* focus:border-blue-500 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important; /* focus:ring-blue-500 */
+}
+
+.document-select__placeholder {
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+.document-select__menu {
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  z-index: 10 !important;
+}
+
+.document-select__option {
+  padding: 0.625rem 1rem !important;
+}
+
+.document-select__option--is-focused {
+  background-color: #EFF6FF !important; /* bg-blue-50 */
+}
+
+.document-select__option--is-selected {
+  background-color: #3B82F6 !important; /* bg-blue-500 */
+  color: white !important;
+}
+
+.group-header {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  color: #1F2937; /* text-gray-800 */
+  background-color: #F3F4F6; /* bg-gray-100 */
+  margin-top: 0.25rem;
+  border-bottom: 1px solid #E5E7EB; /* border-gray-200 */
+}

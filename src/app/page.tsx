@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image'; // Dodano import dla logo
 import { useRouter } from 'next/navigation';
+import Select, { GroupBase, SingleValue, ActionMeta } from 'react-select';
+import Link from 'next/link';
 // Usunięto importy file-saver i html-to-docx z góry pliku
 // import { saveAs } from 'file-saver'; 
 // const htmlToDocx = require('html-to-docx'); 
@@ -25,22 +27,53 @@ type DocumentType =
   | 'porozumienie_o_splacie'
   | 'uchwala_wspolnikow_prosta';
 
-const documentOptions: { value: DocumentType; label: string }[] = [
-  { value: 'wypowiedzenie_najmu', label: 'Wypowiedzenie umowy najmu (przez najemcę)' },
-  { value: 'wypowiedzenie_pracy', label: 'Wypowiedzenie umowy o pracę (przez pracownika)' },
-  { value: 'odwolanie_mandat', label: 'Odwołanie od mandatu karnego' },
-  { value: 'reklamacja', label: 'Reklamacja towaru/usługi' },
-  { value: 'wezwanie_do_zaplaty', label: 'Wezwanie do zapłaty' },
-  { value: 'odstapienie_od_umowy_konsument', label: 'Odstąpienie od umowy (konsument, na odległość/poza lokalem)' },
-  { value: 'pelnomocnictwo_ogolne', label: 'Pełnomocnictwo ogólne' },
-  { value: 'wniosek_zaswiadczenie', label: 'Wniosek o wydanie zaświadczenia' },
-  { value: 'umowa_pozyczki', label: 'Umowa pożyczki (między osobami fizycznymi)' },
-  { value: 'protokol_zdawczo_odbiorczy', label: 'Protokół zdawczo-odbiorczy lokalu' },
-  { value: 'wypowiedzenie_pracodawca', label: 'Wypowiedzenie umowy o pracę (przez pracodawcę)' },
-  { value: 'umowa_zlecenie', label: 'Umowa zlecenie (prosty wzór)' },
-  { value: 'umowa_o_dzielo', label: 'Umowa o dzieło (prosty wzór)' },
-  { value: 'porozumienie_o_splacie', label: 'Porozumienie o spłacie długu w ratach' },
-  { value: 'uchwala_wspolnikow_prosta', label: 'Prosta uchwała wspólników Sp. z o.o.' },
+// Definicja kategorii dokumentów
+type DocumentCategory = 
+  | 'pracownicze'
+  | 'mieszkaniowe'
+  | 'finansowe'
+  | 'konsumenckie'
+  | 'urzedowe'
+  | 'korporacyjne';
+
+// Kategorie z ludzkimi etykietami
+const documentCategories: Record<DocumentCategory, string> = {
+  pracownicze: '📄 Dokumenty pracownicze',
+  mieszkaniowe: '🏠 Dokumenty mieszkaniowe',
+  finansowe: '💰 Dokumenty finansowe',
+  konsumenckie: '⚖️ Dokumenty konsumenckie i reklamacje',
+  urzedowe: '📋 Dokumenty urzędowe i pełnomocnictwa',
+  korporacyjne: '🏢 Dokumenty korporacyjne'
+};
+
+// Rozszerzona struktura opcji dokumentów z kategoriami
+const documentOptions: { value: DocumentType; label: string; category: DocumentCategory }[] = [
+  // Dokumenty pracownicze
+  { value: 'wypowiedzenie_pracy', label: 'Wypowiedzenie umowy o pracę (przez pracownika)', category: 'pracownicze' },
+  { value: 'wypowiedzenie_pracodawca', label: 'Wypowiedzenie umowy o pracę (przez pracodawcę)', category: 'pracownicze' },
+  { value: 'umowa_zlecenie', label: 'Umowa zlecenie (prosty wzór)', category: 'pracownicze' },
+  { value: 'umowa_o_dzielo', label: 'Umowa o dzieło (prosty wzór)', category: 'pracownicze' },
+  
+  // Dokumenty mieszkaniowe
+  { value: 'wypowiedzenie_najmu', label: 'Wypowiedzenie umowy najmu (przez najemcę)', category: 'mieszkaniowe' },
+  { value: 'protokol_zdawczo_odbiorczy', label: 'Protokół zdawczo-odbiorczy lokalu', category: 'mieszkaniowe' },
+  
+  // Dokumenty finansowe
+  { value: 'wezwanie_do_zaplaty', label: 'Wezwanie do zapłaty', category: 'finansowe' },
+  { value: 'umowa_pozyczki', label: 'Umowa pożyczki (między osobami fizycznymi)', category: 'finansowe' },
+  { value: 'porozumienie_o_splacie', label: 'Porozumienie o spłacie długu w ratach', category: 'finansowe' },
+  
+  // Dokumenty konsumenckie
+  { value: 'reklamacja', label: 'Reklamacja towaru/usługi', category: 'konsumenckie' },
+  { value: 'odstapienie_od_umowy_konsument', label: 'Odstąpienie od umowy (konsument, na odległość/poza lokalem)', category: 'konsumenckie' },
+  
+  // Dokumenty urzędowe
+  { value: 'odwolanie_mandat', label: 'Odwołanie od mandatu karnego', category: 'urzedowe' },
+  { value: 'wniosek_zaswiadczenie', label: 'Wniosek o wydanie zaświadczenia', category: 'urzedowe' },
+  { value: 'pelnomocnictwo_ogolne', label: 'Pełnomocnictwo ogólne', category: 'urzedowe' },
+  
+  // Dokumenty korporacyjne
+  { value: 'uchwala_wspolnikow_prosta', label: 'Prosta uchwała wspólników Sp. z o.o.', category: 'korporacyjne' },
 ];
 
 // Definicje tekstów pomocniczych (placeholderów) dla textarea
@@ -62,7 +95,14 @@ const documentPlaceholders: Record<DocumentType, string> = {
   uchwala_wspolnikow_prosta: "Podaj szczegóły dotyczące uchwały wspólników Sp. z o.o.:\n- Nazwa spółki, adres siedziby, numer KRS\n- Data i miejsce podjęcia uchwały\n- Numer uchwały\n- Treść uchwały (np. Zatwierdza się sprawozdanie finansowe za rok obrotowy... / Powołuje się Pana/Panią X na stanowisko Członka Zarządu / Odwołuje się Pana/Panią Y ze stanowiska Członka Zarządu)\n- Wynik głosowania (liczba głosów za, przeciw, wstrzymujących się)\n- Podpisy wspólników obecnych na zgromadzeniu (lub protokołanta, jeśli dotyczy)",
 };
 
-// TODO: Zdefiniować pola dla każdego typu dokumentu
+// Typy dla react-select
+type DocumentOptionType = {
+  value: DocumentType;
+  label: string;
+  category: DocumentCategory;
+};
+
+type DocumentGroupType = GroupBase<DocumentOptionType>;
 
 export default function Home() {
   const router = useRouter();
@@ -76,8 +116,21 @@ export default function Home() {
   const [agreedToTerms, setAgreedToTerms] = useState<boolean>(false);
   const [paymentMessage, setPaymentMessage] = useState<string>('');
 
-  const handleDocumentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value as DocumentType | '';
+  // Przygotowanie opcji pogrupowanych dla Select
+  const groupedOptions: DocumentGroupType[] = Object.entries(documentCategories).map(([categoryKey, categoryLabel]) => {
+    const categoryOptions = documentOptions.filter(doc => doc.category === categoryKey);
+    return {
+      label: categoryLabel,
+      options: categoryOptions
+    };
+  });
+
+  // Obsługa wyboru dokumentu z react-select
+  const handleDocumentSelectChange = (
+    newValue: SingleValue<DocumentOptionType>,
+    actionMeta: ActionMeta<DocumentOptionType>
+  ) => {
+    const value = newValue ? newValue.value : '';
     setSelectedDocument(value);
     setDetailsInput('');
     setPreviewContent('');
@@ -249,20 +302,21 @@ export default function Home() {
             <label htmlFor="documentType" className="block text-sm font-medium text-gray-700 mb-2">
               1. Wybierz rodzaj dokumentu:
             </label>
-            <select
-              id="documentType"
-              value={selectedDocument}
-              onChange={handleDocumentChange}
-              className="mt-1 block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg shadow-sm text-gray-900 transition-all duration-200"
-              disabled={isLoading || isProcessingPayment}
-            >
-              <option value="">-- Wybierz --</option>
-              {documentOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              placeholder="Wybierz dokument lub wpisz aby wyszukać..."
+              options={groupedOptions}
+              onChange={handleDocumentSelectChange}
+              className="mb-4"
+              classNamePrefix="document-select"
+              isClearable
+              isSearchable
+              noOptionsMessage={() => "Nie znaleziono dokumentu"}
+              formatGroupLabel={(group) => (
+                <div className="group-header">
+                  <span className="font-medium text-gray-800">{group.label}</span>
+                </div>
+              )}
+            />
           </section>
         )}
 
@@ -301,7 +355,7 @@ export default function Home() {
                  disabled={isLoading || isProcessingPayment || !selectedDocument}
                />
                <label htmlFor="terms" className={`ml-3 block text-sm ${!selectedDocument ? 'text-gray-400' : 'text-gray-700'}`}>
-                 Akceptuję <a href="/regulamin" target="_blank" rel="noopener noreferrer" className={`underline ${!selectedDocument ? 'text-blue-400' : 'text-blue-600 hover:text-blue-800'}`}>Regulamin</a> serwisu.
+                 Akceptuję <Link href="/regulamin" className={`underline ${!selectedDocument ? 'text-blue-400' : 'text-blue-600 hover:text-blue-800'}`}>Regulamin</Link> serwisu.
                </label>
             </div>
             <button
