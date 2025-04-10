@@ -5,6 +5,8 @@ import Image from 'next/image'; // Dodano import dla logo
 import { useRouter } from 'next/navigation';
 import Select, { GroupBase, SingleValue, ActionMeta } from 'react-select';
 import Link from 'next/link';
+// Importuję komponent formularza pełnomocnictwa
+import PelnomocnictwoForm, { PelnomocnictwoFormData } from '@/components/PelnomocnictwoForm';
 // Usunięto importy file-saver i html-to-docx z góry pliku
 // import { saveAs } from 'file-saver'; 
 // const htmlToDocx = require('html-to-docx'); 
@@ -116,6 +118,15 @@ export default function Home() {
   const [agreedToTerms, setAgreedToTerms] = useState<boolean>(false);
   const [paymentMessage, setPaymentMessage] = useState<string>('');
 
+  // Dodaję stan dla danych formularza pełnomocnictwa
+  const [pelnomocnictwoData, setPelnomocnictwoData] = useState<PelnomocnictwoFormData>({
+    mocodawca: { imie: '', nazwisko: '', adres: '', pesel: '' },
+    pelnomocnik: { imie: '', nazwisko: '', adres: '', pesel: '' },
+    zakres_pelnomocnictwa: { typ: 'ogolne', opis: '' },
+    data: '',
+    miejscowosc: ''
+  });
+
   // Przygotowanie opcji pogrupowanych dla Select
   const groupedOptions: DocumentGroupType[] = Object.entries(documentCategories).map(([categoryKey, categoryLabel]) => {
     const categoryOptions = documentOptions.filter(doc => doc.category === categoryKey);
@@ -145,12 +156,54 @@ export default function Home() {
     setDetailsInput(event.target.value);
   };
 
+  // Funkcja konwertująca dane formularza na format tekstowy do wysłania do API
+  const convertFormDataToText = (data: PelnomocnictwoFormData): string => {
+    let text = `Dane Mocodawcy:\n`;
+    text += `Imię i nazwisko: ${data.mocodawca.imie} ${data.mocodawca.nazwisko}\n`;
+    text += `Adres: ${data.mocodawca.adres}\n`;
+    text += `PESEL: ${data.mocodawca.pesel}\n\n`;
+    
+    text += `Dane Pełnomocnika:\n`;
+    text += `Imię i nazwisko: ${data.pelnomocnik.imie} ${data.pelnomocnik.nazwisko}\n`;
+    text += `Adres: ${data.pelnomocnik.adres}\n`;
+    text += `PESEL: ${data.pelnomocnik.pesel}\n\n`;
+    
+    text += `Zakres pełnomocnictwa: ${data.zakres_pelnomocnictwa.typ === 'ogolne' 
+      ? 'Pełnomocnictwo ogólne' 
+      : 'Pełnomocnictwo szczegółowe'}\n`;
+    
+    if (data.zakres_pelnomocnictwa.typ === 'szczegolowe' && data.zakres_pelnomocnictwa.opis) {
+      text += `Szczegółowy zakres: ${data.zakres_pelnomocnictwa.opis}\n\n`;
+    }
+    
+    text += `Data: ${data.data}\n`;
+    text += `Miejscowość: ${data.miejscowosc}`;
+    
+    return text;
+  };
+
   const handleGeneratePreview = async () => {
     if (!agreedToTerms) {
       alert("Musisz zaakceptować regulamin.");
       return;
     }
-    if (!detailsInput.trim()) {
+    
+    // Sprawdzam czy używamy formularza pełnomocnictwa
+    if (selectedDocument === 'pelnomocnictwo_ogolne') {
+      // Walidacja danych formularza pełnomocnictwa
+      const { mocodawca, pelnomocnik, zakres_pelnomocnictwa, data, miejscowosc } = pelnomocnictwoData;
+      if (!mocodawca.imie || !mocodawca.nazwisko || !mocodawca.adres || !mocodawca.pesel ||
+          !pelnomocnik.imie || !pelnomocnik.nazwisko || !pelnomocnik.adres || !pelnomocnik.pesel ||
+          (zakres_pelnomocnictwa.typ === 'szczegolowe' && !zakres_pelnomocnictwa.opis) ||
+          !data || !miejscowosc) {
+        alert("Proszę wypełnić wszystkie wymagane pola formularza.");
+        return;
+      }
+      
+      // Konwersja danych formularza na tekst
+      const formattedText = convertFormDataToText(pelnomocnictwoData);
+      setDetailsInput(formattedText);
+    } else if (!detailsInput.trim()) {
       alert("Proszę wprowadzić wymagane szczegóły.");
       return;
     }
@@ -168,7 +221,12 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ documentType: selectedDocument, detailsText: detailsInput }),
+        body: JSON.stringify({ 
+          documentType: selectedDocument, 
+          detailsText: selectedDocument === 'pelnomocnictwo_ogolne' 
+            ? convertFormDataToText(pelnomocnictwoData) 
+            : detailsInput 
+        }),
       });
 
       if (!response.ok) {
@@ -320,63 +378,75 @@ export default function Home() {
           </section>
         )}
 
-        {selectedDocument && !isPaid && (
-          <section className="mb-8">
-             <h2 className="text-lg font-semibold text-gray-900 mb-4">2. Wprowadź kluczowe informacje:</h2>
-             <div className="relative">
-               <textarea
-                  id="detailsInput"
-                  name="detailsInput"
-                  rows={10} 
+        {selectedDocument && (
+          <>
+            {selectedDocument === 'pelnomocnictwo_ogolne' ? (
+              // Renderuję formularz dla pełnomocnictwa
+              <div className="mb-6">
+                <PelnomocnictwoForm 
+                  onDataChange={setPelnomocnictwoData}
+                  initialData={pelnomocnictwoData}
+                />
+              </div>
+            ) : (
+              // Renderuję standardowe pole tekstowe dla innych dokumentów
+              <div className="mb-6">
+                <label htmlFor="details-input" className="block text-sm font-medium text-gray-700 mb-2">
+                  Podaj szczegóły potrzebne do wygenerowania dokumentu:
+                </label>
+                <textarea
+                  id="details-input"
+                  rows={12}
+                  className="w-full p-4 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={selectedDocument ? documentPlaceholders[selectedDocument] : ''}
                   value={detailsInput}
                   onChange={handleInputChange}
-                  placeholder={documentPlaceholders[selectedDocument] || 'Wprowadź tutaj szczegóły...'}
-                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder-gray-500 text-gray-900 bg-white disabled:bg-gray-50 transition-all duration-200"
-                  disabled={isLoading || isProcessingPayment}
-                />
-               <div className="text-sm text-gray-500 mt-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                 <p className="font-medium mb-1">Pamiętaj, aby wprowadzić następujące informacje:</p>
-                 <p>{documentPlaceholders[selectedDocument]}</p>
-               </div>
-             </div>
-          </section>
-        )}
+                ></textarea>
+              </div>
+            )}
 
-        {selectedDocument && !previewContent && !isPaid && (
-          <section className="mb-8">
-            <div className="flex items-center mb-5 bg-gray-50 p-3 rounded-lg">
-               <input
-                 id="terms"
-                 name="terms"
-                 type="checkbox"
-                 checked={agreedToTerms}
-                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                 className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200"
-                 disabled={isLoading || isProcessingPayment || !selectedDocument}
-               />
-               <label htmlFor="terms" className={`ml-3 block text-sm ${!selectedDocument ? 'text-gray-400' : 'text-gray-700'}`}>
-                 Akceptuję <Link href="/regulamin" className={`underline ${!selectedDocument ? 'text-blue-400' : 'text-blue-600 hover:text-blue-800'}`}>Regulamin</Link> serwisu.
-               </label>
+            {/* Sekcja z wyjaśnieniem wymaganych informacji - pokazuję tylko gdy NIE jest to pełnomocnictwo */}
+            {selectedDocument !== 'pelnomocnictwo_ogolne' && (
+              <div className="mb-6 bg-blue-50 p-4 rounded-md border border-blue-200">
+                <h3 className="text-md font-medium text-blue-800 mb-2">Wymagane informacje dla tego dokumentu:</h3>
+                <ul className="list-disc pl-5 text-sm text-blue-700 space-y-1">
+                  {documentPlaceholders[selectedDocument].split('\n').map((line, idx) => {
+                    if (idx === 0) return null; // Pomijam pierwszy wiersz
+                    return <li key={idx}>{line}</li>;
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <div className="mb-6 flex items-center">
+              <input
+                id="terms-checkbox"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+              />
+              <label htmlFor="terms-checkbox" className="ml-2 block text-sm text-gray-700">
+                Akceptuję <Link href="/regulamin" target="_blank" className="text-blue-600 hover:text-blue-800 underline">regulamin</Link> serwisu
+              </label>
             </div>
-            <button
-              onClick={handleGeneratePreview}
-              disabled={!selectedDocument || !detailsInput.trim() || !agreedToTerms || isLoading || isProcessingPayment}
-              className="w-full inline-flex justify-center py-3 px-6 border border-transparent shadow-md text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generowanie...
-                </span>
-              ) : 'Generuj Wstępną Wersję'}
-            </button>
-            <p className="mt-3 text-xs text-gray-500 text-center bg-gray-50 p-2 rounded-lg">
-               Pamiętaj, że wygenerowany dokument to tylko wersja wstępna i wymaga weryfikacji. To nie jest porada prawna.
-             </p>
-          </section>
+
+            <div className="mb-6">
+              <button
+                type="button"
+                className={`w-full py-3 px-4 rounded-md text-white font-medium ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                onClick={handleGeneratePreview}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
+                    Generowanie podglądu...
+                  </div>
+                ) : 'Wygeneruj podgląd dokumentu'}
+              </button>
+            </div>
+          </>
         )}
 
         {previewContent && !isPaid && (

@@ -76,3 +76,28 @@ body {
   margin-top: 0.25rem;
   border-bottom: 1px solid #E5E7EB; /* border-gray-200 */
 }
+
+/* Style dla placeholderów z wysokim kontrastem */
+::placeholder {
+  color: #555555;
+  opacity: 0.9;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #555555;
+  opacity: 0.9;
+}
+
+/* Style dla Select z react-select - zwiększony kontrast */
+.css-1dimb5e-singleValue {
+  color: #333 !important;
+}
+
+.css-qbdosj-Input, .css-qbdosj-Input input {
+  color: #333 !important;
+}
+
+.css-1n6sfyn-MenuList {
+  color: #333 !important;
+}
