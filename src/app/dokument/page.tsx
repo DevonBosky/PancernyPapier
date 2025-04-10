@@ -114,11 +114,21 @@ export default function DocumentPage() {
   
   // Lista dostępnych informatorów PDF
   const availableGuides = [
+    'wypowiedzenie_najmu',
     'wypowiedzenie_pracy',
+    'odwolanie_mandat',
+    'reklamacja',
+    'wezwanie_do_zaplaty',
+    'odstapienie_od_umowy_konsument',
+    'pelnomocnictwo_ogolne',
+    'wniosek_zaswiadczenie',
+    'umowa_pozyczki',
+    'protokol_zdawczo_odbiorczy',
+    'wypowiedzenie_pracodawca',
     'umowa_zlecenie',
     'umowa_o_dzielo',
-    'protokol_zdawczo_odbiorczy',
-    'wezwanie_do_zaplaty'
+    'porozumienie_o_splacie',
+    'uchwala_wspolnikow_prosta'
   ];
   
   // Funkcja sprawdzająca czy istnieje informator dla danego dokumentu
