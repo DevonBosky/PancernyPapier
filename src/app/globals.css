@@ -77,27 +77,35 @@ body {
   border-bottom: 1px solid #E5E7EB; /* border-gray-200 */
 }
 
-/* Style dla placeholderów z wysokim kontrastem */
+/* Style dla elementów formularza */
+input, textarea, select {
+  color: #111827; /* Bardzo ciemny tekst dla lepszego kontrastu */
+  font-weight: 500; /* Lekko pogrubiony dla lepszej widoczności */
+}
+
+/* Style dla placeholderów - jaśniejsze */
 ::placeholder {
-  color: #555555;
-  opacity: 0.9;
+  color: #9ca3af; /* Jaśniejszy kolor (gray-400) */
+  opacity: 0.8;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #555555;
-  opacity: 0.9;
+  color: #9ca3af; /* Jaśniejszy kolor (gray-400) */
+  opacity: 0.8;
 }
 
 /* Style dla Select z react-select - zwiększony kontrast */
 .css-1dimb5e-singleValue {
-  color: #333 !important;
+  color: #111827 !important; /* Ciemniejszy kolor */
+  font-weight: 500 !important;
 }
 
 .css-qbdosj-Input, .css-qbdosj-Input input {
-  color: #333 !important;
+  color: #111827 !important; /* Ciemniejszy kolor */
+  font-weight: 500 !important;
 }
 
 .css-1n6sfyn-MenuList {
-  color: #333 !important;
+  color: #111827 !important; /* Ciemniejszy kolor */
 }
