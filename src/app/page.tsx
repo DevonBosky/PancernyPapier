@@ -276,7 +276,7 @@ export default function Home() {
   };
   
   // Funkcja walidująca dane, do użycia bezpośrednio przy kliknięciu przycisku płatności
-  const validateAndProcess = async (paymentFunction: () => void) => {
+  const validateAndProcess = async (plan: 'basic' | 'extended' | 'premium') => {
     if (!selectedDocument) {
       alert('Proszę wybrać rodzaj dokumentu.');
       return;
@@ -311,6 +311,10 @@ export default function Home() {
     setModalStep('payment');
     setIsProcessingPayment(true);
     
+    // Ustawiamy wybrany plan - ważne, to ma efekt dopiero przy następnym renderze
+    setSelectedPlan(plan);
+    console.log('Ustawiono plan na:', plan);
+    
     // Symulujemy płatność
     setTimeout(async () => {
       // Po zakończeniu płatności aktualizujemy status
@@ -341,14 +345,19 @@ export default function Home() {
         const data = await response.json();
         if (data.draft) {
           // Zapisujemy wygenerowany dokument w localStorage, aby móc go odzyskać na stronie docelowej
-          localStorage.setItem('generatedDocument', data.draft);
-          localStorage.setItem('documentType', selectedDocument);
-          localStorage.setItem('paymentPlan', selectedPlan);
-          
-          // Dla debugowania
-          console.log('Zapisano do localStorage:');
-          console.log('documentType:', selectedDocument);
-          console.log('paymentPlan:', selectedPlan);
+          try {
+            localStorage.clear(); // Czyścimy localStorage, aby nie mieszać z poprzednimi danymi
+            localStorage.setItem('generatedDocument', data.draft);
+            localStorage.setItem('documentType', selectedDocument);
+            localStorage.setItem('paymentPlan', plan);
+            
+            // Dla debugowania
+            console.log('Zapisano do localStorage:');
+            console.log('documentType:', selectedDocument);
+            console.log('paymentPlan:', plan);
+          } catch (e) {
+            console.error('Błąd przy zapisie do localStorage:', e);
+          }
           
           // Aktualizujemy modalny komunikat na moment
           setModalMessage('Dokument gotowy! Przekierowujemy...');
@@ -356,7 +365,7 @@ export default function Home() {
           
           // Po krótkim opóźnieniu przekierowujemy na stronę z dokumentem
           setTimeout(() => {
-            router.push(`/dokument?plan=${selectedPlan}`);
+            router.push(`/dokument?plan=${plan}`);
           }, 1000);
           
         } else {
@@ -374,22 +383,19 @@ export default function Home() {
   // Funkcja obsługi płatności podstawowej z walidacją
   const handleBasicPaymentWithValidation = () => {
     console.log('Wybrano pakiet: basic');
-    setSelectedPlan('basic');
-    validateAndProcess(() => {});
+    validateAndProcess('basic');
   };
   
   // Funkcja obsługi płatności rozszerzonej z walidacją
   const handleExtendedPaymentWithValidation = () => {
     console.log('Wybrano pakiet: extended');
-    setSelectedPlan('extended');
-    validateAndProcess(() => {});
+    validateAndProcess('extended');
   };
   
   // Funkcja obsługi płatności premium z walidacją
   const handlePremiumPaymentWithValidation = () => {
     console.log('Wybrano pakiet: premium');
-    setSelectedPlan('premium');
-    validateAndProcess(() => {});
+    validateAndProcess('premium');
   };
 
   // Lista dostępnych informatorów PDF (na razie tylko 5)

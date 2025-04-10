@@ -290,6 +290,15 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
         <p className="text-lg text-gray-600 mt-2 font-light">Profesjonalne dokumenty prawne w kilka minut</p>
       </div>
       
+      {/* Debug info - pokazuje aktualny plan */}
+      <div className="w-full max-w-3xl bg-yellow-50 p-4 mb-4 rounded-lg border border-yellow-200 text-sm">
+        <h3 className="font-bold">Debug Info:</h3>
+        <p>Plan: {paymentPlan}</p>
+        <p>Pokaż informator: {showGuide ? 'Tak' : 'Nie'}</p>
+        <p>Pokaż asystenta: {showAssistant ? 'Tak' : 'Nie'}</p>
+        <p>Typ dokumentu: {documentType}</p>
+      </div>
+      
       <div className="w-full max-w-3xl bg-white p-6 sm:p-8 rounded-xl shadow-xl border border-gray-100 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Twój dokument jest gotowy!</h2>
@@ -349,7 +358,7 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
       </div>
       
       {/* Sekcja dla poradnika */}
-      {showGuide && (
+      {(showGuide || paymentPlan === 'extended' || paymentPlan === 'premium') && (
         <div className="w-full max-w-3xl bg-white p-6 sm:p-8 rounded-xl shadow-xl border border-gray-100 mb-8">
           <div className="flex flex-wrap justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">Twój informator prawny</h2>
@@ -368,7 +377,7 @@ Pracujemy nad przygotowaniem szczegółowego i profesjonalnego informatora dla d
       )}
       
       {/* Sekcja dla asystenta */}
-      {showAssistant && (
+      {(showAssistant || paymentPlan === 'premium') && (
         <div className="w-full max-w-3xl bg-white p-6 sm:p-8 rounded-xl shadow-xl border border-gray-100 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <span className="mr-2">Twój Asystent Prawny</span>
