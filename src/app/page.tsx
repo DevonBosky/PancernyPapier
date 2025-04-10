@@ -231,16 +231,22 @@ export default function Home() {
         {selectedDocument && !isPaid && (
           <section className="mb-8">
              <h2 className="text-lg font-semibold text-gray-900 mb-4">2. Wprowadź kluczowe informacje:</h2>
-             <textarea
-                id="detailsInput"
-                name="detailsInput"
-                rows={10} 
-                value={detailsInput}
-                onChange={handleInputChange}
-                placeholder={documentPlaceholders[selectedDocument] || 'Wprowadź tutaj szczegóły...'}
-                className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder-gray-500 text-gray-900 bg-white disabled:bg-gray-50 transition-all duration-200"
-                disabled={isLoading || isProcessingPayment}
-              />
+             <div className="relative">
+               <textarea
+                  id="detailsInput"
+                  name="detailsInput"
+                  rows={10} 
+                  value={detailsInput}
+                  onChange={handleInputChange}
+                  placeholder={documentPlaceholders[selectedDocument] || 'Wprowadź tutaj szczegóły...'}
+                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm placeholder-gray-500 text-gray-900 bg-white disabled:bg-gray-50 transition-all duration-200"
+                  disabled={isLoading || isProcessingPayment}
+                />
+               <div className="text-sm text-gray-500 mt-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                 <p className="font-medium mb-1">Pamiętaj, aby wprowadzić następujące informacje:</p>
+                 <p>{documentPlaceholders[selectedDocument]}</p>
+               </div>
+             </div>
           </section>
         )}
 
